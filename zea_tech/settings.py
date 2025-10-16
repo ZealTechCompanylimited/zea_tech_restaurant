@@ -1,24 +1,38 @@
 import os
-import dj_database_url
+# import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 
+load_dotenv()  # this must be active, not commented
+
 # Load .env (only for local)
-load_dotenv()
+# load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
+# # SECURITY WARNING: keep the secret key used in production secret!
+# SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "0") in ("1", "True", "true")
+# # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG = os.environ.get("DEBUG", "0") in ("1", "True", "true")
+# ALLOWED_HOSTS = ["*"]
+# # ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
+
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG') == 'True'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
+
+
+
 
 # Application definition
 INSTALLED_APPS = [
-    "jazzmin",
+    'jazzmin',  # correct
     'grappelli',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -69,10 +83,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'zea_tech.wsgi.application'
 
 # DATABASE
+# DATABASES = {
+#     "default": dj_database_url.config(default=os.environ.get("DATABASE_URL"))
+# }
 DATABASES = {
-    "default": dj_database_url.config(default=os.environ.get("DATABASE_URL"))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
+        'PORT': os.getenv('DATABASE_PORT'),
+    }
 }
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
