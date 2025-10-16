@@ -1,0 +1,10 @@
+{% extends "cores/base1.html" %}
+{% block title %}Payment Failed{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <h2 class="text-danger">❌ Payment Failed!</h2>
+    <p>Please try again.</p>
+    <a href="{% url 'subscriptions:choose_plan' %}" class="btn btn-primary mt-3">Back to Plans</a>
+</div>
+{% endblock %}

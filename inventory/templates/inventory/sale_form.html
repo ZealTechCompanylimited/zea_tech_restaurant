@@ -1,0 +1,62 @@
+{% extends "cores/base1.html" %}
+{% block title %}Add Sale{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Add Sale</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label>Restaurant</label>
+            <select name="restaurant" id="restaurant-select" class="form-select">
+                {% for r in restaurants %}
+                <option value="{{ r.id }}">{{ r.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label>Customer Name</label>
+            <input type="text" name="customer_name" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label>Notes</label>
+            <input type="text" name="notes" class="form-control">
+        </div>
+
+        <h5>Items</h5>
+        <div id="items-container">
+            <div class="row mb-2 item-row">
+                <div class="col">
+                    <select name="item[]" class="form-select">
+                        {% for item in stock_items %}
+                        <option value="{{ item.id }}">{{ item.name }} ({{ item.quantity }} {{ item.unit }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col">
+                    <input type="number" name="quantity[]" step="0.01" class="form-control" placeholder="Quantity">
+                </div>
+                <div class="col">
+                    <input type="number" name="unit_price[]" step="0.01" class="form-control" placeholder="Unit Price">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary mb-3" id="add-item">Add More Item</button>
+        <br>
+        <button type="submit" class="btn btn-success">Save Sale</button>
+        <a href="{% url 'inventory:sales' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+<script>
+document.getElementById('add-item').addEventListener('click', function() {
+    let container = document.getElementById('items-container');
+    let newRow = container.children[0].cloneNode(true);
+    newRow.querySelectorAll('input').forEach(input => input.value = '');
+    container.appendChild(newRow);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "cores/base1.html" %}
+{% block title %}Add Reservation{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-lg rounded-3">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">Add Reservation</h4>
+      <a href="{% url 'reservations:list' %}" class="btn btn-light btn-sm">
+        <i class="bi bi-arrow-left-circle"></i> Back to List
+      </a>
+    </div>
+    <div class="card-body">
+
+      {% if errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          {% for error in errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <form method="post" class="row g-3">
+        {% csrf_token %}
+
+        <!-- Restaurant -->
+        <div class="col-md-6">
+          <label for="restaurant" class="form-label fw-semibold">Restaurant</label>
+          <select name="restaurant" id="restaurant" class="form-select" required>
+            <option value="">Select Restaurant</option>
+            {% for r in restaurants %}
+              <option value="{{ r.id }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Branch -->
+        <div class="col-md-6">
+          <label for="branch" class="form-label fw-semibold">Branch</label>
+          <select name="branch" id="branch" class="form-select" required>
+            <option value="">Select Branch</option>
+            {% for b in branches %}
+              <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Date -->
+        <div class="col-md-6">
+          <label for="date" class="form-label fw-semibold">Date</label>
+          <input type="date" name="date" id="date" class="form-control" required>
+        </div>
+
+        <!-- Time -->
+        <div class="col-md-6">
+          <label for="time" class="form-label fw-semibold">Time</label>
+          <input type="time" name="time" id="time" class="form-control" required>
+        </div>
+
+        <!-- Party Size -->
+        <div class="col-md-6">
+          <label for="party_size" class="form-label fw-semibold">Party Size</label>
+          <input type="number" name="party_size" id="party_size" class="form-control" min="1" required>
+        </div>
+
+        <!-- Notes -->
+        <div class="col-12">
+          <label for="notes" class="form-label fw-semibold">Notes</label>
+          <textarea name="notes" id="notes" class="form-control" rows="3"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="col-12 d-flex justify-content-between mt-4">
+          <a href="{% url 'reservations:list' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add Reservation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

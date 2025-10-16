@@ -1,0 +1,51 @@
+{% extends "cores/base1.html" %}
+{% block title %}Assign Users{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Assign Users to {{ object.name }}</h4>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <!-- Users selection -->
+            <div class="mb-3">
+              <label for="id_users" class="form-label">
+                Select Users (Managers, Chefs, Cashiers, Waiters)
+              </label>
+              <select name="users" id="id_users" multiple class="form-control" size="8">
+                {% for user in form.fields.users.queryset %}
+                  <option value="{{ user.id }}" 
+                          {% if user in form.initial.users %}
+                            selected
+                          {% endif %}>
+                    {{ user.username }} ({{ user.get_user_type_display }})
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="form-text">
+                Hold <strong>Ctrl</strong> (or <strong>Cmd</strong> on Mac) to select multiple users.
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'organizations:restaurant_list' %}" class="btn btn-outline-secondary">
+                Cancel
+              </a>
+              <button type="submit" class="btn btn-success">
+                Save Assignment
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

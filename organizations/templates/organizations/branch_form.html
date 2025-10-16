@@ -1,0 +1,65 @@
+{% extends "cores/base1.html" %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Branch{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm p-4">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">{% if object %}Edit{% else %}Add{% endif %} Branch</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <!-- Restaurant -->
+         <!-- Restaurant -->
+<div class="col-md-6">
+  <label class="form-label">Restaurant</label>
+  <select name="restaurant" class="form-select" required>
+    <option value="">Select Restaurant</option>
+    {% for restaurant in restaurants %}
+      <option value="{{ restaurant.id }}"
+        {% if form.restaurant.value|stringformat:"s" == restaurant.id|stringformat:"s" %}selected{% endif %}>
+        {{ restaurant.name }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
+
+          <!-- Name -->
+          <div class="col-md-6">
+            <label class="form-label">Branch Name</label>
+            <input type="text" name="name" class="form-control" value="{{ form.name.value|default_if_none:'' }}" required>
+          </div>
+
+          <!-- Location -->
+          <div class="col-md-6">
+            <label class="form-label">Location</label>
+            <input type="text" name="location" class="form-control" value="{{ form.location.value|default_if_none:'' }}">
+          </div>
+
+          <!-- Phone -->
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" value="{{ form.phone.value|default_if_none:'' }}">
+          </div>
+
+          <!-- Manager -->
+          <div class="col-md-6">
+            <label class="form-label">{{ manager_label }}</label>
+            <input type="text" class="form-control" value="{{ manager_value }}" readonly>
+          </div>
+
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-success">{% if object %}Update{% else %}Create{% endif %}</button>
+          <a href="{% url 'organizations:branch_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

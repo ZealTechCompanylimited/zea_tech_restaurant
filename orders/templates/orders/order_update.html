@@ -1,0 +1,68 @@
+{% extends "cores/base1.html" %}
+{% block title %}Update Order{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Update Order #{{ object.id }}</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <!-- Order Type -->
+          <div class="col-md-6">
+            <label for="id_order_type" class="form-label">Order Type</label>
+            <select name="order_type" id="id_order_type" class="form-select">
+              {% for key, value in order_types %}
+                <option value="{{ key }}" {% if object.order_type == key %}selected{% endif %}>
+                  {{ value }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Table -->
+          <div class="col-md-6">
+            <label for="id_table" class="form-label">Table</label>
+            <select name="table" id="id_table" class="form-select">
+              <option value="">-- Select Table --</option>
+              {% for table in tables %}
+                <option value="{{ table.id }}" {% if object.table and object.table.id == table.id %}selected{% endif %}>
+                  {{ table.name }} (Seats: {{ table.seats }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Notes -->
+          <div class="col-12">
+            <label for="id_notes" class="form-label">Notes</label>
+            <textarea name="notes" id="id_notes" rows="3" class="form-control">{{ object.notes }}</textarea>
+          </div>
+
+          <!-- Status -->
+          <div class="col-md-6">
+            <label for="id_status" class="form-label">Status</label>
+            <select name="status" id="id_status" class="form-select">
+              {% for key, value in statuses %}
+                <option value="{{ key }}" {% if object.status == key %}selected{% endif %}>
+                  {{ value }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-success">Update Order</button>
+          <a href="{% url 'orders:list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

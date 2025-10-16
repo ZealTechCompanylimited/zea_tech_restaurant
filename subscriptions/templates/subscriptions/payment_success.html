@@ -1,0 +1,10 @@
+{% extends "cores/base1.html" %}
+{% block title %}Payment Successful{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <h2 class="text-success">✅ Payment Successful!</h2>
+    <p>Your subscription/order is now active.</p>
+    <a href="{% url 'subscriptions:choose_plan' %}" class="btn btn-primary mt-3">Back to Plans</a>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "cores/base1.html" %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Category{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm p-4">
+  <div class="card-header bg-primary text-white mb-3">
+    <h4 class="mb-0">{% if object %}Edit{% else %}Add{% endif %} Category</h4>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-3 align-items-center mb-3">
+
+      <!-- Name -->
+      <div class="col-md-6">
+        <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+        {{ form.name }}
+        {% for error in form.name.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <!-- Restaurant -->
+      <div class="col-md-6">
+        <label class="form-label" for="{{ form.restaurant.id_for_label }}">{{ form.restaurant.label }}</label>
+        {{ form.restaurant }}
+        {% for error in form.restaurant.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <!-- Active -->
+      <div class="col-md-3 form-check mt-4">
+        {{ form.is_active }}
+        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label>
+        {% for error in form.is_active.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+    </div>
+
+    <button type="submit" class="btn btn-success mt-2 shadow-sm">
+      {% if object %}Update{% else %}Create{% endif %}
+    </button>
+    <a href="{% url 'menu:category_list' %}" class="btn btn-secondary mt-2 shadow-sm">Cancel</a>
+  </form>
+</div>
+
+<script>
+  // Ensure form fields have bootstrap classes
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    if(!el.classList.contains('form-control') && el.type !== 'checkbox') el.classList.add('form-control');
+  });
+</script>
+{% endblock %}

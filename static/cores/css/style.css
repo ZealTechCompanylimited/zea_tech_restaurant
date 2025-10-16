@@ -1,0 +1,117 @@
+
+:root {
+  --primary: #d14a3f;
+  --primary-foreground: #ffffff;
+  --accent: #62e0a2;
+  --primary-glow: #f09b8a;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --muted-foreground: #666;
+  --shadow-elegant: 0 10px 25px -5px rgba(209, 74, 63, 0.1);
+  --shadow-glow: 0 0 30px rgba(240, 155, 138, 0.3);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+}
+
+/* Navbar */
+nav {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid #ddd;
+}
+
+nav a {
+  color: var(--foreground);
+  transition: color 0.3s;
+}
+nav a:hover {
+  color: var(--primary);
+}
+
+/* Hero Section */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background: linear-gradient(135deg, #d14a3f, #62e0a2);
+  color: var(--primary-foreground);
+  text-align: center;
+  padding: 4rem 1rem;
+}
+.hero img {
+  height: 150px;
+  margin-bottom: 2rem;
+  animation: scaleIn 1s ease forwards;
+}
+.hero h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  animation: fadeIn 1s ease forwards 0.2s;
+}
+.hero p {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 1s ease forwards 0.4s;
+}
+.hero .btn {
+  margin: 0.5rem;
+  animation: fadeIn 1s ease forwards 0.6s;
+}
+
+/* Hero Animations */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Features Section */
+.features .card {
+  border: none;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: var(--shadow-elegant);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.features .card:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Stats Section */
+.stats {
+  background: linear-gradient(135deg, #ffffff, #f5f5f5);
+  padding: 4rem 1rem;
+  text-align: center;
+}
+.stats .stat-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+/* CTA Section */
+.cta {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  text-align: center;
+  padding: 4rem 1rem;
+}
+.cta .btn-outline-light {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--primary-foreground);
+}
+.cta .btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

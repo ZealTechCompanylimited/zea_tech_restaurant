@@ -1,0 +1,21 @@
+{% extends "cores/base1.html" %}
+{% block title %}Purchases{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-4">
+  <h2 class="text-primary">Purchases</h2>
+  <a href="{% url 'inventory:purchase_add' %}" class="btn btn-success">New Purchase</a>
+</div>
+<table class="table table-striped">
+  <thead><tr><th>ID</th><th>Supplier</th><th>Total Cost</th><th>Date</th></tr></thead>
+  <tbody>
+    {% for p in purchases %}
+    <tr>
+      <td>{{ p.id }}</td>
+      <td>{{ p.supplier.name }}</td>
+      <td>${{ p.total_cost }}</td>
+      <td>{{ p.created_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

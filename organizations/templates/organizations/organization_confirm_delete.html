@@ -1,0 +1,18 @@
+{% extends "cores/base1.html" %}
+{% block title %}Delete Organization{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm p-4 text-center">
+  <div class="card-header bg-danger text-white">
+    <h4 class="mb-0">Delete Organization</h4>
+  </div>
+  <div class="card-body">
+    <p>Are you sure you want to delete <strong>{{ object.name }}</strong>?</p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      <a href="{% url 'organizations:list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

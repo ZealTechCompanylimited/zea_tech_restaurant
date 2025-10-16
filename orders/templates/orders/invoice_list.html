@@ -1,0 +1,21 @@
+{% extends "cores/base1.html" %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-4">
+  <h2 class="text-primary">Invoices</h2>
+  <a href="{% url 'orders:invoice_add' %}" class="btn btn-success">New Invoice</a>
+</div>
+<table class="table table-striped">
+  <thead><tr><th>Invoice #</th><th>Order</th><th>Date</th><th>Paid</th></tr></thead>
+  <tbody>
+    {% for i in invoices %}
+    <tr>
+      <td>{{ i.invoice_number }}</td>
+      <td>{{ i.order.id }}</td>
+      <td>{{ i.created_at }}</td>
+      <td>{% if i.paid %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-danger">No</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

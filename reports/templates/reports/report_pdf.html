@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Reports PDF</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h2 { color: #333; }
+        .card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        .list-group { padding-left: 15px; }
+        .list-group-item { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+<h2>Financial Reports</h2>
+{% for report in reports %}
+    <div class="card">
+        <h4>{{ report.title }}</h4>
+        {% if report.content.0 %}
+            {% if report.content.0.total or report.content.0.total_qty or report.content.0.quantity or report.content.0.item__name or report.content.0.item__category__name or report.content.0.name %}
+            <ul class="list-group">
+                {% for item in report.content %}
+                    <li class="list-group-item">
+                        {% if item.item__name %}{{ item.item__name }}{% elif item.item__category__name %}{{ item.item__category__name }}{% elif item.name %}{{ item.name }}{% else %}{{ item }}{% endif %}
+                        :
+                        {% if item.total %}{{ item.total|floatformat:2 }}{% endif %}
+                        {% if item.total_qty %} Qty: {{ item.total_qty }}{% endif %}
+                        {% if item.quantity %} Qty: {{ item.quantity }}{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+                <p>{{ report.content }}</p>
+            {% endif %}
+        {% else %}
+            <p>{{ report.content }}</p>
+        {% endif %}
+    </div>
+{% endfor %}
+</body>
+</html>

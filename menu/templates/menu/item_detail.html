@@ -1,0 +1,20 @@
+{% extends "cores/base1.html" %}
+{% block title %}{{ item.name }}{% endblock %}
+
+{% block content %}
+<div class="card p-4">
+  <h3>{{ item.name }}</h3>
+  <p><strong>Category:</strong> {{ item.category }}</p>
+  <p><strong>Price:</strong> {{ item.price }}</p>
+  <p><strong>Tax Rate:</strong> {{ item.tax_rate }}%</p>
+  <p><strong>Available:</strong> {{ item.is_available|yesno:"Yes,No" }}</p>
+  {% if item.image %}
+    <img src="{{ item.image.url }}" class="img-fluid mt-2" alt="{{ item.name }}">
+  {% endif %}
+  <div class="mt-3">
+    <a href="{% url 'menu:item_edit' item.pk %}" class="btn btn-warning">Edit</a>
+    <a href="{% url 'menu:item_delete' item.pk %}" class="btn btn-danger">Delete</a>
+    <a href="{% url 'menu:menu_list' %}" class="btn btn-secondary">Back</a>
+  </div>
+</div>
+{% endblock %}

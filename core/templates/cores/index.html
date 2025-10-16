@@ -1,0 +1,371 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meza Smart Restaurant Management</title>
+<!-- Dependencies (put in <head>) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<!-- Social Media Section -->
+<!-- Tailwind CSS + Tailwind Animate CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tailwindcss-animate@1.0.7/dist/tailwind-animate.min.js"></script>
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<!-- Owl Carousel CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"/>
+<!-- Custom CSS -->
+<link rel="stylesheet" href="{% static 'cores/css/style.css' %}">
+
+<style>
+body { font-family:'Josefin Sans', sans-serif; margin:0; background:#f5f5f5; }
+.navbar-brand img { max-height:40px; }
+
+/* Hero Section */
+.hero { padding:5rem 0; text-align:center; }
+.hero h1 { font-size:2.5rem; }
+.hero p { font-size:1rem; margin-bottom:2rem; }
+
+/* Solutions Section */
+#solutions {
+  background: linear-gradient(135deg, #63B3DEFF, #D1B667FF, #DB570AFF, #96E4E8FF);
+  background-size: 400% 400%;
+  animation: gradientGold 15s ease infinite;
+  padding: 5rem 0;
+}
+@keyframes gradientGold {
+  0% { background-position:0% 50%; }
+  50% { background-position:100% 50%; }
+  100% { background-position:0% 50%; }
+}
+.solution-card {
+  border-radius:15px; background-color:rgba(255,255,255,0.9); color:#333;
+  transition:transform 0.3s, box-shadow 0.3s; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+}
+.solution-card:hover { transform:translateY(-5px); box-shadow:0 8px 20px rgba(0,0,0,0.2); }
+.solution-icon { font-size:3rem; color:#DAA520; margin-bottom:1rem; }
+
+/* Restaurants Section */
+#restaurants { background-color:#FFF2CC; padding:5rem 0; }
+.restaurant-card {
+  border-radius:15px; overflow:hidden; transition:transform 0.2s, filter 0.3s;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg,#816060cc,#a67c52cc); color:#fff;
+}
+.restaurant-card:hover { transform:translateY(-2px); filter:brightness(1.05); }
+.card-img-wrapper { width:100%; height:180px; overflow:hidden; }
+.card-img-top { width:100%; height:100%; object-fit:cover; transition:transform 0.4s ease; }
+.restaurant-card:hover .card-img-top { transform:scale(1.03); }
+.card-body { padding:1rem; }
+.card-title { margin-top:0.7rem; margin-bottom:0.5rem; font-size:1.1rem; font-weight:600; }
+.card-text { font-size:0.9rem; color:#fff; }
+
+/* Stats Section */
+.stats .stat-number { font-size:1.5rem; font-weight:bold; }
+.stats .col-6 div { margin-top:0.3rem; }
+
+/* CTA Section */
+.animated-cta {
+  background: linear-gradient(45deg,#ff9a9e,#fad0c4,#fbc2eb,#a6c1ee);
+  background-size:600% 600%;
+  animation: gradientBG 12s ease infinite;
+  color:#fff; border-radius:15px; padding:3rem 0; overflow:hidden;
+}
+@keyframes gradientBG { 0%{background-position:0%50%}50%{background-position:100%50%}100%{background-position:0%50%} }
+.cta-btn { transition: transform 0.3s ease, box-shadow 0.3s ease; cursor:pointer; }
+.cta-btn:hover { transform: translateY(-2px) scale(1.03); }
+.cta-btn:active { transform: translateY(-3px) rotate(-2deg) scale(1.05); box-shadow:0 5px 15px rgba(0,0,0,0.2); }
+.animated-cta h2,.animated-cta p { animation:fadeSlideUp 1s ease forwards; opacity:0; }
+@keyframes fadeSlideUp { 0%{opacity:0;transform:translateY(20px);}100%{opacity:1;transform:translateY(0);} }
+.animated-cta.visible h2,.animated-cta.visible p{ animation: fadeSlideUp 1s ease forwards; }
+
+/* Responsive */
+@media(max-width:414px){ .hero h1{font-size:1.6rem;} .hero p{font-size:0.9rem;} .card-title{font-size:1rem;} .card-text{font-size:0.85rem;} .stats .stat-number{font-size:1.2rem;} }
+
+
+
+.fade-down {
+  opacity: 0;
+  transform: translateY(-30px);
+  animation: fadeDown 1s ease-out forwards;
+}
+
+@keyframes fadeDown {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+  /* Hover glow for social icons */
+  .social-icon {
+    color: #ffffff;
+    transition: all 0.3s ease;
+  }
+  .social-icon:hover {
+    color: #FFD700; /* Gold */
+    transform: scale(1.2) rotate(10deg);
+  }
+
+  /* Section background and text */
+  #contact-social {
+    background: linear-gradient(135deg, #DB8138FF, #145C40);
+    color: #ffffff;
+  }
+
+  /* Contact info card */
+  .contact-card {
+    background: rgba(255,255,255,0.05);
+    padding: 20px;
+    border-radius: 12px;
+    transition: transform 0.3s;
+  }
+  .contact-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  }
+</style>
+
+
+
+
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-md fixed-top navbar-light bg-light shadow-sm">
+  <div class="container">
+    <a class="navbar-brand" href="#"><img src="{% static 'cores/images/zea.jpg' %}" alt="ZealTech Logo"></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto mb-2 mb-md-0 text-center text-md-start">
+        <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#solutions">Solutions</a></li>
+        <li class="nav-item"><a class="nav-link" href="#restaurants">Restaurants</a></li>
+        <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+      </ul>
+      <div class="dropdown d-flex d-md-inline-block ms-md-3 mt-2 mt-md-0">
+        <a class="btn btn-primary dropdown-toggle" href="#" role="button" id="accountDropdown" data-bs-toggle="dropdown">My Accounts</a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{% url 'login' %}">Login</a></li>
+          <li><a class="dropdown-item" href="{% url 'register' %}">Register</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section id="home" class="hero py-5 mt-5 text-center text-md-start">
+  <div class="container">
+    <h1>Intelligent Solutions</h1>
+    <p>Transforming restaurant operations through cutting-edge technology and innovative digital solutions</p>
+    <div class="d-flex flex-column flex-sm-row justify-content-center justify-content-md-start gap-2">
+      <a class="btn btn-lg btn-light" href="#">Explore Solutions</a>
+      <a class="btn btn-lg btn-outline-light" href="#">Learn More</a>
+    </div>
+  </div>
+</section>
+
+<!-- Solutions Section -->
+<section id="solutions" class="features py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2>Our Solutions</h2>
+      <p>Comprehensive digital transformation for modern restaurants</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-12 col-sm-6 col-md-4">
+        <div class="card text-center p-4 solution-card">
+          <i class="fas fa-users solution-icon"></i>
+          <h5 class="mt-3">Staff Management</h5>
+          <p>Streamline employee scheduling, performance tracking, and communication systems</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-md-4">
+        <div class="card text-center p-4 solution-card">
+          <i class="fas fa-map-marker-alt solution-icon"></i>
+          <h5 class="mt-3">Multi-Location</h5>
+          <p>Manage multiple restaurant locations from a single, unified dashboard</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-md-4">
+        <div class="card text-center p-4 solution-card">
+          <i class="fas fa-chart-line solution-icon"></i>
+          <h5 class="mt-3">Real-time Analytics</h5>
+          <p>Advanced insights and reporting for data-driven decision making</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Restaurants Section -->
+<section id="restaurants" class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2>Our Restaurants</h2>
+      <p>Explore the restaurants we power with technology</p>
+    </div>
+    <div class="owl-carousel owl-theme">
+      {% for restaurant in restaurants %}
+      <div class="item">
+        <div class="card restaurant-card h-100 text-center">
+          <div class="card-img-wrapper">
+            <img src="{{ restaurant.image.url }}" alt="{{ restaurant.name }}" class="card-img-top">
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">{{ restaurant.name }}</h5>
+            <p class="card-text">{{ restaurant.location }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats py-5">
+  <div class="container">
+    <div class="row text-center">
+      <div class="col-6 col-md-3 mb-3"><div class="stat-number" data-target="500">0</div><div>Restaurants Served</div></div>
+      <div class="col-6 col-md-3 mb-3"><div class="stat-number" data-target="99.9">0</div><div>Uptime Guarantee</div></div>
+      <div class="col-6 col-md-3 mb-3"><div class="stat-number" data-target="24">0</div><div>Support Available</div></div>
+      <div class="col-6 col-md-3 mb-3"><div class="stat-number" data-target="50">0</div><div>Countries Worldwide</div></div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+<!-- Section -->
+<section id="contact-social" class="py-5">
+  <div class="container">
+    <div class="row align-items-center">
+
+      <!-- Column 1: Social Media -->
+      <div class="col-md-6 mb-4 mb-md-0 text-center text-md-start">
+        <h5 class="mb-3 animate__animated animate__fadeInDown">Follow Us</h5>
+        <div class="d-flex gap-4 justify-content-center justify-content-md-start">
+          <a href="https://www.instagram.com/yourpage" target="_blank" 
+             class="social-icon fs-3 animate__animated animate__fadeIn animate__delay-1s">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a href="https://twitter.com/yourpage" target="_blank" 
+             class="social-icon fs-3 animate__animated animate__fadeIn animate__delay-2s">
+            <i class="fab fa-twitter"></i>
+          </a>
+          <a href="https://www.tiktok.com/@yourpage" target="_blank" 
+             class="social-icon fs-3 animate__animated animate__fadeIn animate__delay-3s">
+            <i class="fab fa-tiktok"></i>
+          </a>
+          <a href="https://www.facebook.com/yourpage" target="_blank" 
+             class="social-icon fs-3 animate__animated animate__fadeIn animate__delay-4s">
+            <i class="fab fa-facebook"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Column 2: Contact Info -->
+      <div class="col-md-6">
+        <h5 class="mb-3 animate__animated animate__fadeInDown animate__delay-1s">Contact Us</h5>
+        <div class="contact-card animate__animated animate__fadeInUp animate__delay-2s">
+          <p class="mb-2"><i class="fas fa-phone-alt me-2"></i> +255 123 456 789</p>
+          <p class="mb-2"><i class="fas fa-envelope me-2"></i> info@mezasmart.com</p>
+          <p class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> Dar es Salaam, Tanzania</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- CTA Section -->
+<section class="cta py-5 animated-cta">
+  <div class="container text-center text-md-start">
+    <h2>Ready to Transform Your Business?</h2>
+    <p>Join hundreds of restaurants already using ZealTech's intelligent solutions</p>
+    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center justify-content-md-start">
+      <a class="btn btn-secondary btn-lg cta-btn" href="#">Start Free Trial</a>
+      <a class="btn btn-outline-light btn-lg cta-btn" href="#">Schedule Demo</a>
+    </div>
+  </div>
+</section>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.259.0/dist/lucide.min.js"></script>
+
+<script>
+// Count-Up Stats
+function animateCounters(){
+  const counters=document.querySelectorAll('.stat-number');
+  counters.forEach(counter=>{
+    const target=parseFloat(counter.getAttribute('data-target'));
+    let count=0;
+    const increment=target/100;
+    const update=()=>{
+      count+=increment;
+      if(count<target){ counter.innerText=target%1===0?Math.floor(count):count.toFixed(1); requestAnimationFrame(update); }
+      else counter.innerText=target;
+    };
+    update();
+  });
+}
+function isInViewport(el){ const rect=el.getBoundingClientRect(); return rect.top<=window.innerHeight && rect.bottom>=0; }
+const statsSection=document.querySelector('.stats'); let counted=false;
+window.addEventListener('scroll',()=>{ if(!counted && isInViewport(statsSection)){ animateCounters(); counted=true; }});
+
+// CTA Animation
+const ctaSection=document.querySelector('.animated-cta');
+window.addEventListener('scroll',()=>{ const rect=ctaSection.getBoundingClientRect(); if(rect.top<=window.innerHeight-100){ ctaSection.classList.add('visible'); }});
+
+// Owl Carousel
+$(document).ready(function(){
+  $(".owl-carousel").owlCarousel({
+    loop:true,
+    margin:15,
+    nav:true,
+    navText:["<"," >"],
+    responsive:{0:{items:1},576:{items:2},768:{items:3},992:{items:3}}
+  });
+});
+
+lucide.createIcons();
+</script>
+</body>
+</html>

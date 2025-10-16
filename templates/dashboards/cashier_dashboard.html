@@ -1,0 +1,21 @@
+{% extends 'cores/base1.html' %}
+{% block title %}Cashier Dashboard{% endblock %}
+{% comment %} {% block sidebar %}
+<ul class="nav flex-column">
+    <li class="nav-item"><a class="nav-link active" href="#">💵 Payments</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">🧾 Receipts</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">💳 Transactions</a></li>
+</ul>
+{% endblock %} {% endcomment %}
+
+{% block content %}
+<h2 class="fw-bold">Welcome, Cashier!</h2>
+<div class="alert alert-info">Today’s Cash Collected: <strong>$2,350</strong></div>
+{% block sidebar %}
+<ul class="nav flex-column">
+    <li class="nav-item"><a class="nav-link active" href="#">💵 Payments</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">🧾 Receipts</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">💳 Transactions</a></li>
+</ul>
+{% endblock sidebar%}
+{% endblock %} 

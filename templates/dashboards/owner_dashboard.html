@@ -1,0 +1,45 @@
+{% extends 'cores/base1.html' %}
+{% block title %}Owner Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold">Welcome, Owner!</h2>
+<div class="row mt-4">
+  <div class="col-md-3">
+    <div class="card text-bg-primary shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Total Restaurants</h5>
+        <p class="card-text fs-3">{{ total_restaurants }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card text-bg-warning shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">All-Time Revenue</h5>
+        <p class="card-text fs-3">TZS{{ all_time_revenue }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Top 5 Restaurants by Revenue</h5>
+        <ul class="list-group">
+          {% for r in revenue_per_restaurant %}
+          <li class="list-group-item d-flex justify-content-between">
+            {{ r.restaurant__name }}
+            <span>TZS{{ r.total }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item">No sales yet</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

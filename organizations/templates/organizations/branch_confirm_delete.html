@@ -1,0 +1,20 @@
+{% extends "cores/base1.html" %}
+{% block title %}Delete Branch{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm p-4">
+    <div class="card-header bg-danger text-white">
+      <h4 class="mb-0">Delete Branch</h4>
+    </div>
+    <div class="card-body">
+      <p>Are you sure you want to delete the branch <strong>{{ object.name }}</strong> from <strong>{{ object.organization.name }}</strong>?</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'organizations:branch_list' %}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

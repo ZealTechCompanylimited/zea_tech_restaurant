@@ -1,0 +1,61 @@
+{% extends "cores/base1.html" %}
+{% block title %}Restaurants{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2 class="mb-3">Restaurants</h2>
+  <a href="{% url 'organizations:restaurant_add' %}" class="btn btn-success mb-3">
+    <i class="material-icons">add_circle</i> Add Restaurant
+  </a>
+
+  {% if restaurants %}
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Code</th>
+          <th>Address</th>
+          <th>Phone</th>
+          {% comment %} <th>Organization</th> {% endcomment %}
+          <th>Owner</th>
+          <th>Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in restaurants %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{{ r.code }}</td>
+          <td>{{ r.address|default:"-" }}</td>
+          <td>{{ r.phone|default:"-" }}</td>
+          {% comment %} <td>
+            {% if r.organization %}
+              {{ r.organization.name }}
+            {% else %}
+              -
+            {% endif %}
+          </td> {% endcomment %}
+          <td>
+            {% if r.owner %}
+              {{ r.owner.username }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ r.is_active|yesno:"Yes,No" }}</td>
+          <td>
+            <a href="{% url 'organizations:restaurant_edit' r.pk %}" class="btn btn-sm btn-warning">Edit</a>
+            <a href="{% url 'organizations:restaurant_delete' r.pk %}" class="btn btn-sm btn-danger">Delete</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">No restaurants found.</div>
+  {% endif %}
+</div>
+{% endblock %}

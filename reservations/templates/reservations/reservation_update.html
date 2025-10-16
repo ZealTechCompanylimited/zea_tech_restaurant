@@ -1,0 +1,127 @@
+{% extends "cores/base1.html" %}
+{% block title %}Update Reservation{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-lg rounded-3">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">Update Reservation #{{ reservation.id }}</h4>
+      <a href="{% url 'reservations:list' %}" class="btn btn-light btn-sm">
+        <i class="bi bi-arrow-left-circle"></i> Back to List
+      </a>
+    </div>
+
+    <div class="card-body">
+
+      {% if errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          {% for error in errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <form method="post" class="row g-3">
+        {% csrf_token %}
+
+        <!-- Restaurant -->
+        <div class="col-md-6">
+          <label for="restaurant" class="form-label fw-semibold">Restaurant</label>
+          <select name="restaurant" id="restaurant" class="form-select" required>
+            <option value="">Select Restaurant</option>
+            {% for r in restaurants %}
+              <option value="{{ r.id }}" {% if reservation.restaurant.id == r.id %}selected{% endif %}>{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Branch -->
+        <div class="col-md-6">
+          <label for="branch" class="form-label fw-semibold">Branch</label>
+          <select name="branch" id="branch" class="form-select" required>
+            <option value="">Select Branch</option>
+            {% for b in branches %}
+              <option value="{{ b.id }}" {% if reservation.branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Date -->
+        <div class="col-md-6">
+          <label for="date" class="form-label fw-semibold">Date</label>
+          <input type="date" name="date" id="date" class="form-control" value="{{ reservation.date }}" required>
+        </div>
+
+        <!-- Time -->
+        <div class="col-md-6">
+          <label for="time" class="form-label fw-semibold">Time</label>
+          <input type="time" name="time" id="time" class="form-control" value="{{ reservation.time }}" required>
+        </div>
+
+        <!-- Party Size -->
+        <div class="col-md-6">
+          <label for="party_size" class="form-label fw-semibold">Party Size</label>
+          <input type="number" name="party_size" id="party_size" class="form-control" value="{{ reservation.party_size }}" min="1" required>
+        </div>
+
+        <!-- Status -->
+        <div class="col-md-6">
+          <label for="status" class="form-label fw-semibold">Status</label>
+          <select name="status" id="status" class="form-select" required>
+            <option value="">Select Status</option>
+            <option value="Pending" {% if reservation.status == "Pending" %}selected{% endif %}>Pending</option>
+            <option value="Confirmed" {% if reservation.status == "Confirmed" %}selected{% endif %}>Confirmed</option>
+            <option value="Cancelled" {% if reservation.status == "Cancelled" %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+
+        <!-- Guest Name -->
+        <div class="col-md-6">
+          <label for="guest_name" class="form-label fw-semibold">Guest Name</label>
+          <input type="text" name="guest_name" id="guest_name" class="form-control" value="{{ reservation.guest_name }}" required>
+        </div>
+
+        <!-- Guest Phone -->
+        <div class="col-md-6">
+          <label for="guest_phone" class="form-label fw-semibold">Guest Phone</label>
+          <input type="text" name="guest_phone" id="guest_phone" class="form-control" value="{{ reservation.guest_phone }}" required>
+        </div>
+
+        <!-- Notes -->
+        <div class="col-12">
+          <label for="notes" class="form-label fw-semibold">Notes</label>
+          <textarea name="notes" id="notes" class="form-control" rows="3">{{ reservation.notes }}</textarea>
+        </div>
+
+        <!-- Customer Dropdown (only for Owner/Manager) -->
+        {% if request.user.user_type in "OWNER,MANAGER" %}
+        <div class="col-12">
+          <label for="customer" class="form-label fw-semibold">Customer</label>
+          <select name="customer" id="customer" class="form-select">
+            <option value="">Select Customer</option>
+            {% for customer in customers %}
+              <option value="{{ customer.id }}" {% if reservation.customer and reservation.customer.id == customer.id %}selected{% endif %}>
+                {{ customer.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <!-- Buttons -->
+        <div class="col-12 d-flex justify-content-between mt-4">
+          <a href="{% url 'reservations:list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Update Reservation
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

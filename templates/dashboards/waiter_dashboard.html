@@ -1,0 +1,42 @@
+{% extends 'cores/base1.html' %}
+{% block title %}Waiter Dashboard{% endblock %}
+
+{% block sidebar %}
+<ul class="nav flex-column">
+    <li class="nav-item"><a class="nav-link active" href="#">🍽 Assigned Tables</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">📝 Take Order</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-3">Welcome, Waiter!</h2>
+<p class="mb-4">Here are your tables at {{ restaurant.name }}:</p>
+
+<div class="row g-4">
+    {% for table in assigned_tables %}
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 text-center animate__animated animate__fadeInUp hover-scale">
+            <div class="card-body">
+                <h5 class="card-title">Table {{ table.name }}</h5>
+                <p class="card-text">Seats: {{ table.seats }}</p>
+                <span class="badge {% if table.is_occupied %}bg-danger{% else %}bg-success{% endif %}">
+                    {% if table.is_occupied %}Occupied{% else %}Free{% endif %}
+                </span>
+                {% comment %} <a href="{% url 'take_order' table.id %}" class="btn btn-primary btn-sm mt-2">Take Order</a> {% endcomment %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>No tables assigned yet.</p>
+    {% endfor %}
+</div>
+
+<!-- Hover effect CSS -->
+<style>
+.hover-scale:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease-in-out;
+}
+</style>
+
+{% endblock %}

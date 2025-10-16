@@ -1,0 +1,65 @@
+{% extends "cores/base1.html" %}
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Categories</h2>
+    <a href="{% url 'menu:category_add' %}" class="btn btn-primary">
+      <i class="material-icons align-middle">add_circle</i> Add Category
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover shadow-sm">
+      <thead class="table-dark">
+        <tr>
+          <th>Name</th>
+          <th>Restaurant</th>
+          <th>Active</th>
+          <th>Created By</th>
+          <th>Created At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td>{{ cat.name }}</td>
+       <td>
+  {% if cat.restaurant %}
+    {{ cat.restaurant.name }}
+  {% else %}
+    -
+  {% endif %}
+</td>
+
+          <td>{{ cat.is_active|yesno:"Yes,No" }}</td>
+        <td>
+  {% if cat.created_by %}
+    {{ cat.created_by.username }}
+  {% else %}
+    -
+  {% endif %}
+</td>
+
+          <td>{{ cat.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            <a href="{% url 'menu:category_edit' cat.pk %}" class="btn btn-sm btn-warning me-1">
+              <i class="material-icons">edit</i>
+            </a>
+            <a href="{% url 'menu:category_delete' cat.pk %}" class="btn btn-sm btn-danger">
+              <i class="material-icons">delete</i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center">No categories found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

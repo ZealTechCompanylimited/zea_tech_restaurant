@@ -1,0 +1,93 @@
+{% extends "cores/base1.html" %}
+{% block title %}Stock Movement{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Add Stock Movement</h2>
+
+  <form method="post" class="card p-4 shadow-sm">
+    {% csrf_token %}
+
+    <!-- Restaurant -->
+    <div class="mb-3">
+      <label for="id_restaurant" class="form-label">Restaurant</label>
+      <select name="restaurant" id="id_restaurant" class="form-select">
+        <option value="">Select a restaurant</option>
+        {% for restaurant in form.restaurant.field.queryset %}
+          <option value="{{ restaurant.id }}" {% if form.restaurant.value == restaurant.id %}selected{% endif %}>
+            {{ restaurant.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Stock Item -->
+    <div class="mb-3">
+      <label for="id_item" class="form-label">Stock Item</label>
+      <select name="item" id="id_item" class="form-select">
+        {% for stock_item in form.item.field.queryset %}
+          <option value="{{ stock_item.id }}" {% if form.item.value == stock_item.id %}selected{% endif %}>
+            {{ stock_item.name }} ({{ stock_item.quantity }} {{ stock_item.unit }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Movement Type -->
+    <div class="mb-3">
+      <label for="id_movement_type" class="form-label">Movement Type</label>
+      <select name="movement_type" id="id_movement_type" class="form-select">
+        {% for key, value in form.movement_type.field.choices %}
+          <option value="{{ key }}" {% if form.movement_type.value == key %}selected{% endif %}>
+            {{ value }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Quantity -->
+    <div class="mb-3">
+      <label for="id_quantity" class="form-label">Quantity</label>
+      <input type="number" step="0.01" name="quantity" id="id_quantity" class="form-control"
+             value="{{ form.quantity.value|default:0 }}">
+    </div>
+
+    <!-- Note -->
+    <div class="mb-3">
+      <label for="id_note" class="form-label">Note</label>
+      <textarea name="note" id="id_note" class="form-control" rows="3">{{ form.note.value|default:'' }}</textarea>
+    </div>
+
+    <div class="mt-4">
+      <button type="submit" class="btn btn-success">Save Movement</button>
+      <a href="{% url 'inventory:movements' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+const restaurantSelect = document.getElementById('id_restaurant');
+const itemSelect = document.getElementById('id_item');
+
+restaurantSelect.addEventListener('change', function() {
+    const restaurantId = this.value;
+
+    if (!restaurantId) {
+        itemSelect.innerHTML = '<option value="">Select a restaurant first</option>';
+        return;
+    }
+
+    fetch(`/inventory/get_items_by_restaurant/${restaurantId}/`)
+        .then(res => res.json())
+        .then(data => {
+            itemSelect.innerHTML = '';
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.text = `${item.name} (${item.quantity} ${item.unit})`;
+                itemSelect.add(option);
+            });
+        });
+});
+</script>
+{% endblock %}

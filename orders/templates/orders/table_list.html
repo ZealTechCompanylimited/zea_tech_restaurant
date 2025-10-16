@@ -1,0 +1,43 @@
+{% extends "cores/base1.html" %}
+{% block title %}Tables{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="text-primary fw-bold">Tables</h2>
+  <a href="{% url 'orders:table_add' %}" class="btn btn-success">
+    <i class="material-icons me-1">add_circle</i> Add Table
+  </a>
+</div>
+
+{% if tables %}
+<table class="table table-striped shadow-sm">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Seats</th>
+      <th>Active</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for table in tables %}
+    <tr>
+      <td>{{ table.name }}</td>
+      <td>{{ table.seats }}</td>
+      <td>{% if table.is_active %}Yes{% else %}No{% endif %}</td>
+      <td>
+        <a href="{% url 'orders:table_edit' table.pk %}" class="btn btn-warning btn-sm">
+          <i class="material-icons">edit</i>
+        </a>
+        <a href="{% url 'orders:table_delete' table.pk %}" class="btn btn-danger btn-sm">
+          <i class="material-icons">delete</i>
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">No tables found. Add your first table.</div>
+{% endif %}
+{% endblock %}

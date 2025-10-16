@@ -1,0 +1,62 @@
+{% extends 'cores/base1.html' %}
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block sidebar %}
+<ul class="nav flex-column">
+    <li class="nav-item"><a class="nav-link active" href="#">📋 Reports</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">👥 Employees</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">📦 Inventory</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">⚙ Settings</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold">Welcome, Manager!</h2>
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Pending Orders</h5>
+                <p class="fs-4">{{ open_orders_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Show table of open orders -->
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Open Orders List</h5>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in open_orders %}
+                            <tr>
+                                <td>{{ order.id }}</td>
+                                <td>{{ order.customer_name }}</td>
+                                <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>${{ order.grand_total }}</td>
+                                <td>{{ order.status }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No open orders</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

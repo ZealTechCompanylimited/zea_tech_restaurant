@@ -1,0 +1,56 @@
+{% extends "cores/base1.html" %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Table{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm p-4">
+    <div class="card-header bg-primary text-white">
+      <h4>{% if object %}Edit{% else %}Add{% endif %} Table</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Restaurant Dropdown -->
+        <div class="mb-3">
+          <label class="form-label">Restaurant</label>
+          <select name="restaurant" class="form-select" required>
+            <option value="">Select a restaurant</option>
+            {% for restaurant in restaurants %}
+              <option value="{{ restaurant.id }}"
+                {% if form.restaurant.value == restaurant.id|stringformat:"s" %}selected{% endif %}>
+                {{ restaurant.name }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if form.errors.restaurant %}
+            <div class="text-danger">{{ form.errors.restaurant }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Table Name -->
+        <div class="mb-3">
+          <label class="form-label">Table Name</label>
+          <input type="text" name="name" class="form-control" value="{{ form.name.value|default_if_none:'' }}">
+        </div>
+
+        <!-- Seats -->
+        <div class="mb-3">
+          <label class="form-label">Seats</label>
+          <input type="number" name="seats" class="form-control" value="{{ form.seats.value|default_if_none:'2' }}">
+        </div>
+
+        <!-- Active Checkbox -->
+        <div class="form-check mb-3">
+          <input type="checkbox" name="is_active" class="form-check-input" {% if form.is_active.value %}checked{% endif %}>
+          <label class="form-check-label">Active</label>
+        </div>
+
+        <!-- Buttons -->
+        <button type="submit" class="btn btn-success">{% if object %}Update{% else %}Create{% endif %}</button>
+        <a href="{% url 'orders:table_list' %}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

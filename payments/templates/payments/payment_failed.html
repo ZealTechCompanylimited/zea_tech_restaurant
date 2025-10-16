@@ -1,0 +1,15 @@
+{% extends "cores/base1.html" %}
+{% block title %}Payment Failed{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h2 class="text-danger">Payment Failed ❌</h2>
+    <p>Sorry, your payment could not be processed.</p>
+
+    {% if error %}
+        <p><strong>Error:</strong> {{ error }}</p>
+    {% endif %}
+
+    <a href="{% url 'orders:list' %}" class="btn btn-secondary mt-3">Back to Orders</a>
+</div>
+{% endblock %}

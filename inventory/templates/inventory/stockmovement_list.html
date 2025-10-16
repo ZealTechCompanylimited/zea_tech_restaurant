@@ -1,0 +1,52 @@
+{% extends "cores/base1.html" %}
+{% block title %}Stock Movements{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-primary fw-bold">📦 Stock Movements</h2>
+    <a href="{% url 'inventory:movements_add' %}" class="btn btn-success">
+      <i class="material-icons me-1">add_circle</i> New Movement
+    </a>
+  </div>
+
+  {% if movements %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle shadow-sm">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Item</th>
+          <th>Movement Type</th>
+          <th>Quantity</th>
+          <th>Note</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for move in movements %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ move.item.name }}</td>
+          <td>
+            {% if move.movement_type == "IN" %}
+              <span class="badge bg-success">In</span>
+            {% else %}
+              <span class="badge bg-danger">Out</span>
+            {% endif %}
+          </td>
+          <td>{{ move.quantity }} {{ move.item.unit }}</td>
+          <td>{{ move.note|default:"-" }}</td>
+          <td>{{ move.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info text-center shadow-sm">
+    No stock movements recorded yet.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

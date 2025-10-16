@@ -1,0 +1,119 @@
+{% extends "cores/base1.html" %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Orders List</h3>
+    <div>
+      <!-- New Order Button -->
+      <a href="{% url 'orders:add' %}" class="btn btn-success me-2">
+        <i class="material-icons me-1">add_circle</i> New Order
+      </a>
+
+      <!-- WhatsApp Order Button -->
+      <a href="https://wa.me/255620280809" target="_blank" class="btn btn-success">
+        <i class="bi bi-whatsapp me-1"></i> Order via WhatsApp
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Form -->
+  <form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-3 col-sm-6">
+      <label for="search" class="form-label">Customer Name</label>
+      <input type="text" name="search" id="search" class="form-control" placeholder="Search by customer name"
+             value="{{ request.GET.search }}">
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <label for="start_date" class="form-label">Start Date</label>
+      <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request.GET.start_date }}">
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <label for="end_date" class="form-label">End Date</label>
+      <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request.GET.end_date }}">
+    </div>
+    <div class="col-md-3 col-sm-6 d-grid">
+      <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+  </form>
+
+  <!-- Orders Table -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Restaurant</th>
+          <th>Created By</th>
+          <th>Order Type</th>
+          <th>Customer Name</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Table Number</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Created At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ order.restaurant.name }}</td>
+          <td>
+            {% if order.created_by %}
+              {{ order.created_by.username }} [{{ order.created_by.user_type }}]
+            {% else %}
+              Guest [CUSTOMER]
+            {% endif %}
+          </td>
+          <td>{{ order.get_order_type_display }}</td>
+          <td>{{ order.guest_name|default:"-" }}</td>
+          <td>{{ order.guest_phone|default:"-" }}</td>
+          <td>{{ order.get_status_display }}</td>
+          <td>{{ order.table_number|default:"-" }}</td>
+          <td>
+            {% if order.items.exists %}
+              <ul class="mb-0">
+                {% for item in order.items.all %}
+                  <li>{{ item.item.name }} x {{ item.quantity }} = TZS{{ item.line_total|floatformat:2 }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>TZS{{ order.grand_total|floatformat:2 }}</td>
+          <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            <div class="btn-group" role="group">
+              {% if user.user_type in "OWNER MANAGER " %}
+              <a href="{% url 'orders:update' order.pk %}" class="btn btn-sm btn-warning me-1">Edit</a>
+               {% if user.user_type in "OWNER" %}
+              <a href="{% url 'orders:delete' order.pk %}" class="btn btn-sm btn-danger me-1">Delete</a>
+              {%endif%}
+              
+              {% endif %}
+              {% if order.status == "OPEN" %}
+                <a href="{% url 'payments:payment_form' order.id %}" class="btn btn-sm btn-primary">Pay</a>
+              {% elif order.status == "PAID" %}
+                <span class="badge bg-success">Paid</span>
+              {% elif order.status == "CANCELLED" %}
+                <span class="badge bg-danger">Cancelled</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="12" class="text-center">No orders available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

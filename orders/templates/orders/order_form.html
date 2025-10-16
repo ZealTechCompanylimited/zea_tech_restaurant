@@ -1,0 +1,119 @@
+{% extends "cores/base1.html" %}
+{% block title %}Add Order{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm p-4">
+    <div class="card-header bg-primary text-white">
+      <h4>Create Order</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Restaurant -->
+        <div class="mb-3">
+          <label class="form-label">Restaurant</label>
+          <select name="restaurant" class="form-select" required>
+            {% for r in restaurants %}
+              <option value="{{ r.id }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Order Type -->
+        <div class="mb-3">
+          <label class="form-label">Order Type</label>
+          <select id="order-type" name="order_type" class="form-select" required>
+            <option value="DINE_IN">Dine-In</option>
+            <option value="TAKEAWAY">Takeaway</option>
+            <option value="DELIVERY">Delivery</option>
+          </select>
+        </div>
+
+        <!-- Table (for Dine-In) -->
+        <div id="table-field" class="mb-3">
+          <label class="form-label">Table</label>
+          <select name="table" class="form-select">
+            <option value="">--Select Table--</option>
+            {% for table in tables %}
+              <option value="{{ table.id }}">{{ table.name }} (Seats: {{ table.seats }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Guest Info (for Delivery/Takeaway) -->
+        <div id="guest-fields" class="mb-3" style="display:none;">
+          <label class="form-label">Customer Name</label>
+          <input type="text" name="guest_name" class="form-control mb-2">
+          <label class="form-label">Phone Number</label>
+          <input type="text" name="guest_phone" class="form-control">
+        </div>
+<label for="created_by">Created By</label>
+  <input type="text" id="created_by" class="form-control" 
+         value="{{ current_user.username }}" readonly>
+
+        <!-- Items -->
+        <div class="mb-3">
+          <label class="form-label">Items</label>
+          <div id="items-container">
+            <div class="d-flex mb-2">
+              <select name="item" class="form-select me-2" required>
+                <option value="">--Select Item--</option>
+                {% for item in items %}
+                  <option value="{{ item.id }}">{{ item.name }} (${{ item.price }})</option>
+                {% endfor %}
+              </select>
+              <input type="number" name="quantity" class="form-control me-2" placeholder="Qty" value="1" min="1" required>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addItemRow()">Add Another Item</button>
+        </div>
+
+        <!-- Notes -->
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" rows="2"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Create Order</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const orderType = document.getElementById("order-type");
+  const guestFields = document.getElementById("guest-fields");
+  const tableField = document.getElementById("table-field");
+
+  function toggleFields() {
+    if (orderType.value === "DELIVERY" || orderType.value === "TAKEAWAY") {
+      guestFields.style.display = "block";
+      tableField.style.display = "none";
+    } else {
+      guestFields.style.display = "none";
+      tableField.style.display = "block";
+    }
+  }
+  orderType.addEventListener("change", toggleFields);
+  toggleFields();
+
+  function addItemRow() {
+    const container = document.getElementById('items-container');
+    const div = document.createElement('div');
+    div.classList.add('d-flex', 'mb-2');
+    div.innerHTML = `
+      <select name="item" class="form-select me-2" required>
+        <option value="">--Select Item--</option>
+        {% for item in items %}
+          <option value="{{ item.id }}">{{ item.name }} (${{ item.price }})</option>
+        {% endfor %}
+      </select>
+      <input type="number" name="quantity" class="form-control me-2" placeholder="Qty" value="1" min="1" required>
+      <button type="button" class="btn btn-danger" onclick="this.parentNode.remove()">Remove</button>
+    `;
+    container.appendChild(div);
+  }
+</script>
+{% endblock %}

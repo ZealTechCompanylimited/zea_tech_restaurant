@@ -1,0 +1,71 @@
+{% extends 'cores/base1.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 rounded">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">{% if object %}Edit Supplier{% else %}Add Supplier{% endif %}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label fw-semibold">Name</label>
+                            <input type="text" name="{{ form.name.html_name }}" id="id_name"
+                                   value="{{ form.name.value|default_if_none:'' }}" class="form-control">
+                            {% if form.name.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {{ form.name.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_phone" class="form-label fw-semibold">Phone</label>
+                            <input type="text" name="{{ form.phone.html_name }}" id="id_phone"
+                                   value="{{ form.phone.value|default_if_none:'' }}" class="form-control">
+                            {% if form.phone.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {{ form.phone.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label fw-semibold">Email</label>
+                            <input type="email" name="{{ form.email.html_name }}" id="id_email"
+                                   value="{{ form.email.value|default_if_none:'' }}" class="form-control">
+                            {% if form.email.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {{ form.email.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_address" class="form-label fw-semibold">Address</label>
+                            <textarea name="{{ form.address.html_name }}" id="id_address" class="form-control">{{ form.address.value|default_if_none:'' }}</textarea>
+                            {% if form.address.errors %}
+                                <div class="text-danger mt-1 small">
+                                    {{ form.address.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="submit" class="btn btn-success w-50">
+                                {% if object %}Update{% else %}Add{% endif %}
+                            </button>
+                            <a href="{% url 'inventory:suppliers' %}" class="btn btn-outline-secondary w-45">Cancel</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "cores/base1.html" %}
+{% block title %}Organizations{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Organizations</h2>
+  <a href="{% url 'organizations:add' %}" class="btn btn-primary">
+    <i class="material-icons align-middle">add_circle</i> Add Organization
+  </a>
+</div>
+
+<table class="table table-bordered table-striped table-hover shadow-sm">
+  <thead class="table-dark">
+    <tr>
+      <th>Name</th>
+      <th>Address</th>
+      <th>Email</th>
+      <th>Phone</th>
+      <th>Created By</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for org in organizations %}
+      <tr>
+        <td>{{ org.name }}</td>
+        <td>{{ org.address }}</td>
+        <td>{{ org.email }}</td>
+        <td>{{ org.phone }}</td>
+        <td>{{ org.created_by.get_full_name|default:org.created_by.username }}</td>
+        <td>
+          <a href="{% url 'organizations:edit' org.pk %}" class="btn btn-sm btn-warning">
+            <i class="material-icons">edit</i>
+          </a>
+          <a href="{% url 'organizations:delete' org.pk %}" class="btn btn-sm btn-danger">
+            <i class="material-icons">delete</i>
+          </a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="6" class="text-center">No organizations found. Click Add Organization to create one.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

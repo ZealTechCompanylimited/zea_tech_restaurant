@@ -1,0 +1,40 @@
+{% extends 'cores/base1.html' %}
+{% block title %}Customer Dashboard{% endblock %}
+
+{% block sidebar %}
+<ul class="nav flex-column">
+    <li class="nav-item"><a class="nav-link active" href="#">📖 Menu</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">🛒 My Orders</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-3">Welcome, Dear Customer!</h2>
+<p class="mb-4">Browse our menu and place your order 👇</p>
+
+<div class="row g-4">
+    {% for item in menus %}
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 animate__animated animate__fadeInUp hover-scale">
+            {% if item.image %}
+            <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}">
+            {% endif %}
+            <div class="card-body text-center">
+                <h5 class="card-title">{{ item.name }}</h5>
+                <p class="card-text">${{ item.price }}</p>
+                {% comment %} <button class="btn btn-primary btn-sm">Order Now</button> {% endcomment %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Optional CSS for hover effect -->
+<style>
+.hover-scale:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease-in-out;
+}
+</style>
+
+{% endblock %}

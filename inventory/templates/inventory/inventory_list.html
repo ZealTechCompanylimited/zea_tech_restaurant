@@ -1,0 +1,53 @@
+{% extends "cores/base1.html" %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+ <a class="nav-link" href="{% url 'inventory:history' %}">
+    <i class="material-icons">history</i> Inventory History
+  </a>
+<div class="d-flex justify-content-between mb-4">
+  <h2 class="text-primary fw-bold">📦Inventory</h2>
+  <a href="{% url 'inventory:add' %}" class="btn btn-success">
+    <i class="material-icons me-1">add_circle</i> Add Stock Item
+  </a>
+</div>
+
+{% if inventory_items %}
+<table class="table table-bordered table-striped">
+  <thead class="table-dark">
+    <tr>
+      <th>Name</th>
+      <th>Unit</th>
+      <th>Quantity</th>
+      <th>Threshold</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in inventory_items %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td>{{ item.unit }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>{{ item.min_threshold }}</td>
+      <td>
+        {% if item.quantity <= item.min_threshold %}
+          <span class="badge bg-danger">Low Stock</span>
+        {% else %}
+          <span class="badge bg-success">OK</span>
+        {% endif %}
+      </td>
+      <td>
+        <a href="{% url 'inventory:edit' item.id %}" class="btn btn-warning btn-sm">Edit</a>
+        <a href="{% url 'inventory:delete' item.id %}" class="btn btn-danger btn-sm">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">No inventory items yet.</div>
+{% endif %}
+{% endblock %}

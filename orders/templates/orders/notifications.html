@@ -1,0 +1,39 @@
+{% extends "cores/base1.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary fw-bold">Notifications</h2>
+        <form method="post" action="{% url 'orders:mark_all_read' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-success">Mark All as Read</button>
+        </form>
+    </div>
+
+    {% if notifications %}
+        <ul class="list-group">
+            {% for notification in notifications %}
+            <li class="list-group-item d-flex justify-content-between align-items-start {% if not notification.is_read %}list-group-item-warning{% endif %}">
+                <div>
+                    <strong>{{ notification.title }}</strong><br>
+                    <small class="text-muted">{{ notification.created_at|date:"d M Y H:i" }}</small>
+                    <p class="mb-0">{{ notification.message }}</p>
+                </div>
+                {% if not notification.is_read %}
+                <form method="post" action="{% url 'orders:mark_read' notification.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary">Mark as Read</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="alert alert-info text-center mt-3">
+            You have no notifications.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "cores/base1.html" %}
+{% block title %}Restaurants{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">🍽 Select a Restaurant</h2>
+  <div class="row">
+    {% for restaurant in restaurants %}
+      <div class="col-md-4 mb-3">
+        <div class="card shadow-sm">
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ restaurant.name }}</h5>
+            <p>{{ restaurant.address }}</p>
+            <a href="{% url 'menu:menu_by_restaurant' restaurant.id %}" class="btn btn-primary">
+              View Menu
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

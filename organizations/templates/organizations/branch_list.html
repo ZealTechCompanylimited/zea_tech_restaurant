@@ -1,0 +1,53 @@
+{% extends "cores/base1.html" %}
+{% block title %}Branches{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Branches</h2>
+    <a href="{% url 'organizations:branch_create' %}" class="btn btn-primary">Add Branch</a>
+  </div>
+
+  {% if branches %}
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Restaurant</th>
+            <th>Location</th>
+            <th>Phone</th>
+            <th>Created By</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for branch in branches %}
+          <tr>
+            <td>{{ branch.name }}</td>
+            <td>{{ branch.restaurant.name }}</td>
+            <td>{{ branch.location|default:"-" }}</td>
+            <td>{{ branch.phone|default:"-" }}</td>
+            <td>
+              {% if branch.manager %}
+                {{ branch.manager.username }} ({{ branch.manager.get_user_type_display }})
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'organizations:branch_update' branch.pk %}" class="btn btn-sm btn-warning">Edit</a>
+               {% if user.user_type in "OWNER " %}
+              <a href="{% url 'organizations:branch_delete' branch.pk %}" class="btn btn-sm btn-danger">Delete</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">No branches found.</div>
+  {% endif %}
+</div>
+{% endblock %}
