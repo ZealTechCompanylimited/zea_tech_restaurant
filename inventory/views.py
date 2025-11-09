@@ -8,6 +8,10 @@ from django.http import HttpResponseForbidden
 from decimal import Decimal, InvalidOperation
 
 
+from django.http import JsonResponse
+
+from .models import StockMovement, StockItem, Restaurant
+
 
 
 # ======================
@@ -19,25 +23,25 @@ class StockItemListView(LoginRequiredMixin, ListView):
     template_name = 'inventory/stockitem_list.html'
     context_object_name = 'inventory_items'
 
-def get_queryset(self):
-    user = self.request.user
+    def get_queryset(self):
+        user = self.request.user
 
-    # OWNER anaona stock items zote
-    if user.user_type == "OWNER":
-        return StockItem.objects.all()
+        # OWNER anaona stock items zote
+        if user.user_type == "OWNER":
+            return StockItem.objects.all()
 
-    # Wafanyakazi wanaona items za restaurant walizopewa assignment
-    elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-        # kama user ana restaurant moja (ForeignKey)
-        if hasattr(user, 'restaurant') and user.restaurant:
-            return StockItem.objects.filter(restaurant=user.restaurant)
+        # Wafanyakazi wanaona items za restaurant walizopewa assignment
+        elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
+            # kama user ana restaurant moja (ForeignKey)
+            if hasattr(user, 'restaurant') and user.restaurant:
+                return StockItem.objects.filter(restaurant=user.restaurant)
 
-        # kama user anaweza kuwa assigned kwenye restaurants nyingi (ManyToMany)
-        # elif hasattr(user, 'assigned_restaurants'):
-        #     return StockItem.objects.filter(restaurant__in=user.assigned_restaurants.all())
+            # kama user anaweza kuwa assigned kwenye restaurants nyingi (ManyToMany)
+            # elif hasattr(user, 'assigned_restaurants'):
+            #     return StockItem.objects.filter(restaurant__in=user.assigned_restaurants.all())
 
-    # Kama siyo owner wala staff waliotajwa — haoni kitu
-    return StockItem.objects.none()
+        # Kama siyo owner wala staff waliotajwa — haoni kitu
+        return StockItem.objects.none()
 
 
 
@@ -123,22 +127,9 @@ class StockMovementListView(LoginRequiredMixin, ListView):
         return StockMovement.objects.none()
 
 
-from django.views.generic import CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.http import JsonResponse
-
-from .models import StockMovement, StockItem, Restaurant
 
 
 
-
-from django.views.generic import CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.http import JsonResponse
-
-from .models import StockMovement, StockItem, Restaurant
 
 class StockMovementCreateView(LoginRequiredMixin, CreateView):
     model = StockMovement

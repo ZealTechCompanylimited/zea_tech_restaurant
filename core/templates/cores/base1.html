@@ -193,12 +193,12 @@ footer {
       <a href="{% url 'menu:menu_list' %}"><i class="material-icons">restaurant_menu</i><span>Menu</span></a>
     {% endif %}
 
-    {% if user.is_superuser or user.user_type == "OWNER" %}
+    {% if user.is_superuser or user.user_type == "OWNER" or user.user_type == "MANAGER"%}
       <a href="{% url 'admin:index' %}"><i class="material-icons">admin_panel_settings</i><span>Admin Panel</span></a>
       <a href="{% url 'organizations:restaurant_list' %}"><i class="material-icons">store</i><span>Restaurants</span></a>
       <a href="{% url 'inventory:movements_add' %}"><i class="material-icons">add</i><span>Add Movement</span></a>
       <a href="{% url 'inventory:sales' %}"><i class="material-icons">point_of_sale</i><span>Sales</span></a>
-      {% elif user.user_type in "CUSTOMER"%}
+      {% elif user.user_type == "CUSTOMER"%}
       <a href="{% url 'reports:feedback_list' %}"><i class="material-icons">feedback</i><span>Customer Feedback</span></a>
     {% endif %}
 

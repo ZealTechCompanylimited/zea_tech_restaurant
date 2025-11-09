@@ -7,7 +7,7 @@
     <form method="post">
         {% csrf_token %}
         <div class="mb-3">
-            <label>Restaurant</label>
+            <label>Liquistore</label>
             <select name="restaurant" id="restaurant-select" class="form-select">
                 {% for r in restaurants %}
                 <option value="{{ r.id }}">{{ r.name }}</option>

@@ -9,7 +9,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('', HomeCreateView.as_view(), name='index'),
     
-    path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    # path("dashboard/", DashboardView.as_view(), name="dashboard"),
     
     
     
