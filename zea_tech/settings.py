@@ -1,35 +1,25 @@
 import os
-# import dj_database_url
+
 from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()  # this must be active, not commented
 
-# Load .env (only for local)
-# load_dotenv()
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-# # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
-
-# # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.environ.get("DEBUG", "0") in ("1", "True", "true")
-# ALLOWED_HOSTS = ["*"]
-# # ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
-
-
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+
+
+
 
 SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG') == 'True'
-if DEBUG:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-else:
-    ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS').split(',')]
 
+DEBUG = os.getenv('DEBUG') == 'True'
+
+# ALLOWED_HOSTS hardcoded to read from .env only
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
 
 
 
