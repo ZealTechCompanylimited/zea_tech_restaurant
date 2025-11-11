@@ -9,8 +9,16 @@ class StockItem(models.Model):
     unit = models.CharField(max_length=20, default="pcs") # kg, l, pcs
     quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     min_threshold = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
-    
+    buying_price = models.DecimalField(max_digits=12, decimal_places=2, default=0,null=True,blank=True)  # New
+    selling_price = models.DecimalField(max_digits=12, decimal_places=2, default=0,null=True,blank=True)  # New
+    @property
+
+    def profit(self):
+        buying = self.buying_price or 0
+        selling = self.selling_price or 0
+        return selling - buying
+
+
     def __str__(self):
         return f"{self.name} ({self.quantity} {self.unit})"
 

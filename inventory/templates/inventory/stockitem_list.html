@@ -20,6 +20,9 @@
                 <th>Quantity</th>
                 <th>Unit</th>
                 <th>Min Threshold</th>
+                <th>Buying Price</th>
+                <th>Selling Price</th>
+                <th>Profit</th>
                 <th>Restaurant</th>
                 <th>Actions</th>
             </tr>
@@ -32,12 +35,19 @@
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.unit }}</td>
                 <td>{{ item.min_threshold }}</td>
+                <td>{{ item.buying_price }}</td>
+                <td>{{ item.selling_price }}</td>
+
+                <!-- Profit = Selling - Buying -->
+                <td>{{ item.profit|floatformat:2 }}</td>
+
+
                 <td>{{ item.restaurant.name }}</td>
                 <td>
                     <a href="{% url 'inventory:edit' item.id %}" class="btn btn-sm btn-primary">
                         <i class="material-icons">edit</i>
                     </a>
-                    {% if user.user_type in "OWNER" %}
+                    {% if user.user_type == "OWNER" %}
                     <a href="{% url 'inventory:delete' item.id %}" class="btn btn-sm btn-danger">
                         <i class="material-icons">delete</i>
                     </a>
@@ -46,7 +56,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center">No stock items found.</td>
+                <td colspan="10" class="text-center">No stock items found.</td>
             </tr>
             {% endfor %}
         </tbody>

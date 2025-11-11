@@ -12,10 +12,10 @@
 
     <!-- Restaurant -->
   <!-- Optional: Display restaurant name but not editable -->
-{% comment %} <div class="mb-3">
+ <div class="mb-3">
   <label for="id_restaurant" class="form-label">Restaurant</label>
   {{ form.restaurant }}
-</div> {% endcomment %}
+</div> 
 
 
     <!-- Name -->
@@ -45,6 +45,22 @@
       <input type="number" step="0.01" name="min_threshold" id="id_min_threshold" class="form-control"
              value="{{ form.min_threshold.value|default:0 }}">
     </div>
+        <!-- Buying Price -->
+    <div class="mb-3">
+      <label for="id_buying_price" class="form-label">Buying Price</label>
+      <input type="number" step="0.01" name="buying_price" id="id_buying_price"
+             class="form-control"
+             value="{{ form.buying_price.value|default:0 }}">
+    </div>
+
+    <!-- Selling Price -->
+    <div class="mb-3">
+      <label for="id_selling_price" class="form-label">Selling Price</label>
+      <input type="number" step="0.01" name="selling_price" id="id_selling_price"
+             class="form-control"
+             value="{{ form.selling_price.value|default:0 }}">
+    </div>
+
 
     <div class="mt-4">
       <button type="submit" class="btn btn-primary">

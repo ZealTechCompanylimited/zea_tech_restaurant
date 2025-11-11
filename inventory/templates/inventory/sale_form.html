@@ -6,8 +6,9 @@
     <h3>Add Sale</h3>
     <form method="post">
         {% csrf_token %}
+
         <div class="mb-3">
-            <label>Liquistore</label>
+            <label>Restaurant</label>
             <select name="restaurant" id="restaurant-select" class="form-select">
                 {% for r in restaurants %}
                 <option value="{{ r.id }}">{{ r.name }}</option>
@@ -29,29 +30,68 @@
         <div id="items-container">
             <div class="row mb-2 item-row">
                 <div class="col">
-                    <select name="item[]" class="form-select">
+                    <select name="item[]" class="form-select item-select">
                         {% for item in stock_items %}
-                        <option value="{{ item.id }}">{{ item.name }} ({{ item.quantity }} {{ item.unit }})</option>
+                        <option value="{{ item.id }}" data-price="{{ item.selling_price }}">
+                            {{ item.name }} ({{ item.quantity }} {{ item.unit }})
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col">
-                    <input type="number" name="quantity[]" step="0.01" class="form-control" placeholder="Quantity">
+                    <input type="number" name="quantity[]" step="0.01" class="form-control quantity" placeholder="Quantity">
                 </div>
                 <div class="col">
-                    <input type="number" name="unit_price[]" step="0.01" class="form-control" placeholder="Unit Price">
+                    <input type="number" name="unit_price[]" step="0.01" class="form-control unit-price" placeholder="Unit Price">
+                </div>
+                <div class="col">
+                    <input type="number" name="line_total[]" class="form-control line-total" placeholder="Total" readonly>
                 </div>
             </div>
         </div>
 
         <button type="button" class="btn btn-secondary mb-3" id="add-item">Add More Item</button>
-        <br>
+
+        <h4>Total: <span id="grand-total">0.00</span></h4>
+        <input type="hidden" name="total_amount" id="total_amount">
+
         <button type="submit" class="btn btn-success">Save Sale</button>
         <a href="{% url 'inventory:sales' %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 
 <script>
+function recalcTotals() {
+    let grandTotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        let price = parseFloat(row.querySelector('.unit-price').value) || 0;
+        let qty = parseFloat(row.querySelector('.quantity').value) || 0;
+        let lineTotal = price * qty;
+        row.querySelector('.line-total').value = lineTotal.toFixed(2);
+        grandTotal += lineTotal;
+    });
+    document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
+    document.getElementById('total_amount').value = grandTotal.toFixed(2);
+}
+
+// Auto-fill unit_price when item changes
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('item-select')) {
+        let price = e.target.selectedOptions[0].getAttribute('data-price');
+        let row = e.target.closest('.item-row');
+        row.querySelector('.unit-price').value = price;
+        recalcTotals();
+    }
+});
+
+// Recalculate on quantity or unit price change
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('unit-price') || e.target.classList.contains('quantity')) {
+        recalcTotals();
+    }
+});
+
+// Add new item row
 document.getElementById('add-item').addEventListener('click', function() {
     let container = document.getElementById('items-container');
     let newRow = container.children[0].cloneNode(true);

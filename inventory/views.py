@@ -46,16 +46,47 @@ class StockItemListView(LoginRequiredMixin, ListView):
 
 
 
+# class StockItemCreateView(LoginRequiredMixin, CreateView):
+#     model = StockItem
+#     fields = ['restaurant', 'name', 'unit', 'quantity', 'min_threshold']
+#     template_name = 'inventory/stockitem_form.html'
+#     success_url = reverse_lazy('inventory:list')
+
+#     def get_form(self, form_class=None):
+#         form = super().get_form(form_class)
+#         user = self.request.user
+#         # Filter restaurants kulingana na user
+#         if user.user_type == "OWNER":
+#             form.fields['restaurant'].queryset = Restaurant.objects.all()
+#         else:
+#             form.fields['restaurant'].queryset = Restaurant.objects.filter(users=user)
+#         return form
+
+#     def form_valid(self, form):
+#         # Assign restaurant automatically kama staff hana kuchagua
+#         if not form.instance.restaurant:
+#             form.instance.restaurant = self.request.user.restaurant
+#         return super().form_valid(form)
+
+
 class StockItemCreateView(LoginRequiredMixin, CreateView):
     model = StockItem
-    fields = ['restaurant', 'name', 'unit', 'quantity', 'min_threshold']
+    fields = [
+        'restaurant',
+        'name',
+        'unit',
+        'quantity',
+        'min_threshold',
+        'buying_price',
+        'selling_price'
+    ]
     template_name = 'inventory/stockitem_form.html'
     success_url = reverse_lazy('inventory:list')
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         user = self.request.user
-        # Filter restaurants kulingana na user
+
         if user.user_type == "OWNER":
             form.fields['restaurant'].queryset = Restaurant.objects.all()
         else:
@@ -63,24 +94,25 @@ class StockItemCreateView(LoginRequiredMixin, CreateView):
         return form
 
     def form_valid(self, form):
-        # Assign restaurant automatically kama staff hana kuchagua
         if not form.instance.restaurant:
             form.instance.restaurant = self.request.user.restaurant
         return super().form_valid(form)
 
 
 
-
-
 class StockItemUpdateView(LoginRequiredMixin, UpdateView):
     model = StockItem
-    fields = ['name', 'unit', 'quantity', 'min_threshold']
+    fields = ['name', 'unit', 'quantity', 'min_threshold', 'buying_price', 'selling_price']  # added
     template_name = 'inventory/stockitem_form.html'
     success_url = reverse_lazy('inventory:list')
 
     def get_queryset(self):
         # ensure user can only update items of their restaurant
-        return StockItem.objects.filter(restaurant=self.request.user.restaurant)
+        user = self.request.user
+        if user.user_type == "OWNER":
+            return StockItem.objects.all()
+        return StockItem.objects.filter(restaurant=user.restaurant)
+
 
 class StockItemDeleteView(LoginRequiredMixin, DeleteView):
     model = StockItem
@@ -345,6 +377,8 @@ class PurchaseCreateView(LoginRequiredMixin, View):
 # ===============================
 
 
+
+
 class SaleListView(LoginRequiredMixin, View):
     template_name = "inventory/sale_list.html"
 
@@ -352,11 +386,8 @@ class SaleListView(LoginRequiredMixin, View):
         user = request.user
 
         if user.user_type == "OWNER":
-            # OWNER → ona sales zote
             sales = Sale.objects.all().order_by('-created_at')
-
         elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-            # Staff → ona tu sales za restaurant yao
             if user.restaurant:
                 sales = Sale.objects.filter(restaurant=user.restaurant).order_by('-created_at')
             else:
@@ -364,13 +395,98 @@ class SaleListView(LoginRequiredMixin, View):
         else:
             sales = Sale.objects.none()
 
+        # Calculate profit per sale
+        for sale in sales:
+            total_profit = sum(
+                (item.unit_price - item.item.buying_price) * item.quantity
+                for item in sale.items.all()
+            )
+            sale.total_profit = total_profit  # attach dynamically
+
         return render(request, self.template_name, {"sales": sales})
 
 
 
 
+# class SaleCreateView(LoginRequiredMixin, View):
+#     template_name = "inventory/sale_form.html"
 
-class SaleCreateView(LoginRequiredMixin, View):
+#     def get_user_restaurants(self, user):
+#         if user.user_type == "OWNER":
+#             return Restaurant.objects.all()
+#         elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
+#             return Restaurant.objects.filter(id=user.restaurant.id) if user.restaurant else Restaurant.objects.none()
+#         return Restaurant.objects.none()
+
+#     def get(self, request):
+#         restaurants = self.get_user_restaurants(request.user)
+#         stock_items = StockItem.objects.filter(restaurant__in=restaurants)
+#         return render(request, self.template_name, {"restaurants": restaurants, "stock_items": stock_items})
+
+#     def post(self, request):
+#         user_restaurants = self.get_user_restaurants(request.user)
+
+#         # Validate restaurant
+#         try:
+#             restaurant_id = int(request.POST.get("restaurant"))
+#             restaurant = get_object_or_404(user_restaurants, id=restaurant_id)
+#         except (ValueError, TypeError):
+#             return HttpResponseForbidden("Invalid restaurant selected.")
+
+#         customer_name = request.POST.get("customer_name") or ""
+#         notes = request.POST.get("notes") or ""
+
+#         # Convert total_amount safely
+#         try:
+#             total_amount = Decimal(request.POST.get("total_amount") or "0")
+#         except InvalidOperation:
+#             total_amount = Decimal("0")
+
+#         sale = Sale.objects.create(
+#             restaurant=restaurant,
+#             customer_name=customer_name,
+#             notes=notes,
+#             total_amount=total_amount
+#         )
+
+#         items = request.POST.getlist("item[]")
+#         quantities = request.POST.getlist("quantity[]")
+#         unit_prices = request.POST.getlist("unit_price[]")
+
+#         for i, item_id in enumerate(items):
+#             stock_item = get_object_or_404(StockItem, id=item_id, restaurant=restaurant)
+
+#             # Convert quantities and prices safely
+#             try:
+#                 qty = Decimal(quantities[i])
+#                 price = Decimal(unit_prices[i])
+#             except (InvalidOperation, IndexError):
+#                 continue  # skip invalid entries
+
+#             if stock_item.quantity < qty:
+#                 sale.delete()  # rollback sale
+#                 return HttpResponseForbidden(f"Not enough stock for {stock_item.name}")
+
+#             # Update stock safely
+#             stock_item.quantity -= qty
+#             stock_item.save()
+
+#             SaleItem.objects.create(
+#                 sale=sale,
+#                 item=stock_item,
+#                 quantity=qty,
+#                 unit_price=price
+#             )
+
+#         return redirect("inventory:sales")
+    
+from decimal import Decimal, InvalidOperation
+
+from django.db import transaction
+
+
+
+class SaleCreateView(LoginRequiredMixin, TemplateView):
     template_name = "inventory/sale_form.html"
 
     def get_user_restaurants(self, user):
@@ -380,15 +496,17 @@ class SaleCreateView(LoginRequiredMixin, View):
             return Restaurant.objects.filter(id=user.restaurant.id) if user.restaurant else Restaurant.objects.none()
         return Restaurant.objects.none()
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         restaurants = self.get_user_restaurants(request.user)
         stock_items = StockItem.objects.filter(restaurant__in=restaurants)
-        return render(request, self.template_name, {"restaurants": restaurants, "stock_items": stock_items})
+        return render(request, self.template_name, {
+            "restaurants": restaurants,
+            "stock_items": stock_items
+        })
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         user_restaurants = self.get_user_restaurants(request.user)
 
-        # Validate restaurant
         try:
             restaurant_id = int(request.POST.get("restaurant"))
             restaurant = get_object_or_404(user_restaurants, id=restaurant_id)
@@ -397,52 +515,42 @@ class SaleCreateView(LoginRequiredMixin, View):
 
         customer_name = request.POST.get("customer_name") or ""
         notes = request.POST.get("notes") or ""
+        total_amount = Decimal(request.POST.get("total_amount") or "0")
 
-        # Convert total_amount safely
-        try:
-            total_amount = Decimal(request.POST.get("total_amount") or "0")
-        except InvalidOperation:
-            total_amount = Decimal("0")
-
-        sale = Sale.objects.create(
-            restaurant=restaurant,
-            customer_name=customer_name,
-            notes=notes,
-            total_amount=total_amount
-        )
-
-        items = request.POST.getlist("item[]")
-        quantities = request.POST.getlist("quantity[]")
-        unit_prices = request.POST.getlist("unit_price[]")
-
-        for i, item_id in enumerate(items):
-            stock_item = get_object_or_404(StockItem, id=item_id, restaurant=restaurant)
-
-            # Convert quantities and prices safely
-            try:
-                qty = Decimal(quantities[i])
-                price = Decimal(unit_prices[i])
-            except (InvalidOperation, IndexError):
-                continue  # skip invalid entries
-
-            if stock_item.quantity < qty:
-                sale.delete()  # rollback sale
-                return HttpResponseForbidden(f"Not enough stock for {stock_item.name}")
-
-            # Update stock safely
-            stock_item.quantity -= qty
-            stock_item.save()
-
-            SaleItem.objects.create(
-                sale=sale,
-                item=stock_item,
-                quantity=qty,
-                unit_price=price
+        with transaction.atomic():
+            sale = Sale.objects.create(
+                restaurant=restaurant,
+                customer_name=customer_name,
+                notes=notes,
+                total_amount=total_amount
             )
 
+            items = request.POST.getlist("item[]")
+            quantities = request.POST.getlist("quantity[]")
+            unit_prices = request.POST.getlist("unit_price[]")
+
+            for i, item_id in enumerate(items):
+                stock_item = get_object_or_404(StockItem, id=item_id, restaurant=restaurant)
+
+                try:
+                    qty = Decimal(quantities[i])
+                    price = Decimal(unit_prices[i])
+                except (InvalidOperation, IndexError):
+                    continue
+
+                if stock_item.quantity < qty:
+                    transaction.set_rollback(True)
+                    return HttpResponseForbidden(f"Not enough stock for {stock_item.name}")
+
+                SaleItem.objects.create(
+                    sale=sale,
+                    item=stock_item,
+                    quantity=qty,
+                    unit_price=price
+                )
+
         return redirect("inventory:sales")
-    
-    
+ 
 
 class SaleUpdateView(LoginRequiredMixin, View):
     template_name = "inventory/sale_form.html"
