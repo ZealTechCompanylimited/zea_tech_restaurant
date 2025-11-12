@@ -1,4 +1,4 @@
-
+from organizations.models import Restaurant
 from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -26,3 +26,21 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment for Order {self.order.id} - {self.status}"
+
+
+class Expenditure(models.Model):
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenditure_created"
+    )
+
+
+    def __str__(self):
+        return f"{self.title} - {self.amount}"

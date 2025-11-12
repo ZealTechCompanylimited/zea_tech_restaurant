@@ -203,8 +203,9 @@ footer {
     {% endif %}
 
     <a href="{% url 'orders:list' %}"><i class="material-icons">receipt_long</i><span>Orders</span></a>
-
+    
     {% if user.user_type in "OWNER MANAGER" %}
+      <a href="{% url 'payments:explist' %}"><i class="material-icons">payment</i><span>Expenditures</span></a>
       <a href="{% url 'organizations:branch_list' %}"><i class="material-icons">apartment</i><span>Branches</span></a>
       <a href="{% url 'orders:table_list' %}"><i class="material-icons">table_chart</i><span>Tables</span></a>
       <a href="{% url 'organizations:list' %}"><i class="material-icons">business</i><span>Organizations</span></a>

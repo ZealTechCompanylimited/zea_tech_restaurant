@@ -7,6 +7,32 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Stock Items</h3>
+
+           <!-- ✅ Search Form -->
+   
+    <form method="GET" class="d-flex me-3" >
+        <input type="text" name="search" class="form-control" placeholder="Search by name"
+               value="{{ search_query }}">
+        <button type="submit" class="btn btn-primary ms-2">
+            <i class="material-icons">search</i> Search
+        </button>
+    </form>
+
+
+
+ {% comment %} <!-- ✅ Search Form -->
+    <form method="GET" class="d-flex me-3">
+        <input type="text" name="q" value="{{ search }}" class="form-control" placeholder="Search item...">
+        <button class="btn btn-primary ms-2">Search</button>
+    </form> {% endcomment %}
+
+
+    
+
+
+
+
+
         <a href="{% url 'inventory:add' %}" class="btn btn-success">
             <i class="material-icons">add</i> Add Item
         </a>

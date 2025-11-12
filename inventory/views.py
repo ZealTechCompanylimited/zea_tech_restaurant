@@ -25,23 +25,26 @@ class StockItemListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
+        queryset = StockItem.objects.all()
 
-        # OWNER anaona stock items zote
-        if user.user_type == "OWNER":
-            return StockItem.objects.all()
-
-        # Wafanyakazi wanaona items za restaurant walizopewa assignment
-        elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-            # kama user ana restaurant moja (ForeignKey)
+        # OWNER sees all
+        if user.user_type != "OWNER":
             if hasattr(user, 'restaurant') and user.restaurant:
-                return StockItem.objects.filter(restaurant=user.restaurant)
+                queryset = queryset.filter(restaurant=user.restaurant)
+            else:
+                queryset = StockItem.objects.none()
 
-            # kama user anaweza kuwa assigned kwenye restaurants nyingi (ManyToMany)
-            # elif hasattr(user, 'assigned_restaurants'):
-            #     return StockItem.objects.filter(restaurant__in=user.assigned_restaurants.all())
+        # ✅ handle search
+        search = self.request.GET.get('search', '')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
 
-        # Kama siyo owner wala staff waliotajwa — haoni kitu
-        return StockItem.objects.none()
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        return context
 
 
 
@@ -379,32 +382,57 @@ class PurchaseCreateView(LoginRequiredMixin, View):
 
 
 
-class SaleListView(LoginRequiredMixin, View):
+from django.views.generic import ListView
+from django.db.models import Q
+
+from django.views.generic import ListView
+from django.db.models import Q
+
+class SaleListView(LoginRequiredMixin, ListView):
+    model = Sale
     template_name = "inventory/sale_list.html"
+    context_object_name = "sales"
 
-    def get(self, request):
-        user = request.user
+    def get_queryset(self):
+        user = self.request.user
 
+        # Base queryset depending on user type
         if user.user_type == "OWNER":
-            sales = Sale.objects.all().order_by('-created_at')
+            queryset = Sale.objects.all()
         elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-            if user.restaurant:
-                sales = Sale.objects.filter(restaurant=user.restaurant).order_by('-created_at')
+            if hasattr(user, 'restaurant') and user.restaurant:
+                queryset = Sale.objects.filter(restaurant=user.restaurant)
             else:
-                sales = Sale.objects.none()
+                queryset = Sale.objects.none()
         else:
-            sales = Sale.objects.none()
+            queryset = Sale.objects.none()
 
-        # Calculate profit per sale
-        for sale in sales:
+        queryset = queryset.order_by('-created_at')
+
+        # ✅ Search filter (now includes notes)
+        search = self.request.GET.get('search', '')
+        if search:
+            queryset = queryset.filter(
+                Q(id__icontains=search) |
+                Q(customer_name__icontains=search) |
+                Q(items__item__name__icontains=search) |
+                Q(notes__icontains=search)                # ✅ Add notes here
+            ).distinct()
+
+        # ✅ Attach profit dynamically
+        for sale in queryset:
             total_profit = sum(
                 (item.unit_price - item.item.buying_price) * item.quantity
                 for item in sale.items.all()
             )
-            sale.total_profit = total_profit  # attach dynamically
+            sale.total_profit = total_profit
 
-        return render(request, self.template_name, {"sales": sales})
+        return queryset
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_query"] = self.request.GET.get('search', '')
+        return context
 
 
 

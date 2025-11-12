@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse, HttpResponse
 # from django.contrib.auth import get_user_model
 from orders.models import Order
-from .models import Payment
+from .models import Payment,Expenditure
 from .services import AzamPayService
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -14,6 +14,14 @@ from .forms import PaymentForm
 from django.conf import settings
 from django.urls import reverse
 import logging
+from django.views.generic import ListView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from datetime import date
+from django.db.models import Sum
+
+
+
 # User = get_user_model()
 User = settings.AUTH_USER_MODEL 
 logger = logging.getLogger(__name__)
@@ -148,3 +156,52 @@ class PaymentSuccessView(View):
 class PaymentFailedView(View):
     def get(self, request):
         return render(request, "payments/payment_failed.html")
+
+
+
+
+
+
+class ExpenditureListView(LoginRequiredMixin, ListView):
+    template_name = "payments/expenditure_list.html"
+    context_object_name = "expenditures"
+
+    def get_queryset(self):
+        qs = Expenditure.objects.filter(restaurant=self.request.user.restaurant).order_by('-date')
+
+        filter_type = self.request.GET.get('filter_type', 'today')
+        if filter_type == 'today':
+            qs = qs.filter(date=date.today())
+        elif filter_type == 'month':
+            month = self.request.GET.get('month')
+            if month:
+                qs = qs.filter(date__month=int(month))
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Total expenditure for current filter
+        context["total_amount"] = sum(e.amount for e in context["expenditures"])
+
+        # Months for dropdown
+        context["months"] = [
+            (1, "January"), (2, "February"), (3, "March"), (4, "April"),
+            (5, "May"), (6, "June"), (7, "July"), (8, "August"),
+            (9, "September"), (10, "October"), (11, "November"), (12, "December")
+        ]
+        return context
+
+
+
+class ExpenditureCreateView(LoginRequiredMixin, CreateView):
+    model = Expenditure
+    fields = ["title", "amount"]
+    template_name = "payments/expenditure_form.html"
+    success_url = reverse_lazy("payments:explist")
+
+    def form_valid(self, form):
+        form.instance.restaurant = self.request.user.restaurant
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+

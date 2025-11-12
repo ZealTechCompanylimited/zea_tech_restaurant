@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
+
 USER_TYPES = [
         ("OWNER", "Owner"),
         ("MANAGER", "Manager"),
@@ -32,3 +34,9 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.email} ({self.get_user_type_display()})"
+
+
+
+
+
+
