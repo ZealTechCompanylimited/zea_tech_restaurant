@@ -69,33 +69,21 @@ class RestaurantUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         user = self.request.user
-        # Owner/Manager update restaurants zao tu
+
         if user.user_type == 'OWNER':
+            # Owner → restaurants alizomiliki
             return Restaurant.objects.filter(owner=user)
-        elif user.user_type == 'MANAGER':
+
+        elif user.user_type in ['MANAGER', 'CHEF', 'CASHIER', 'WAITER']:
+            # Staff → restaurants walizo-assigniwa
             return Restaurant.objects.filter(users=user)
+
+        # Default → no access
         return Restaurant.objects.none()
+
     
     
 
-
-class RestaurantUpdateView(LoginRequiredMixin, UpdateView):
-    model = Restaurant
-    fields = ['name', 'code', 'address', 'phone', 'organization', 'is_active']
-    template_name = 'organizations/restaurant_form.html'
-    success_url = reverse_lazy('organizations:restaurant_list')
-
-    def form_valid(self, form):
-        # Automatically set the owner if not set
-        if not form.instance.owner:
-            form.instance.owner = self.request.user
-        return super().form_valid(form)
-
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        # Optional: Limit organizations if needed
-        form.fields['organization'].queryset = Organization.objects.all()
-        return form
 
 
 class RestaurantDeleteView(LoginRequiredMixin, DeleteView):
@@ -143,20 +131,6 @@ class OrganizationListView(LoginRequiredMixin, ListView):
 
 
 
-# class OrganizationListView(LoginRequiredMixin, ListView):
-#     model = Organization
-#     template_name = "organizations/organization_list.html"
-#     context_object_name = "organizations"
-
-#     def get_queryset(self):
-#         user = self.request.user
-#         # Return organizations where user is Owner OR Manager
-#         return Organization.objects.filter(
-#             Q(created_by=user) | Q(managers=user)
-#         ).distinct()
-
-
-
 class OrganizationCreateView(LoginRequiredMixin, CreateView):
     model = Organization
     fields = ['name', 'address', 'email', 'phone']
@@ -173,6 +147,21 @@ class OrganizationUpdateView(LoginRequiredMixin, UpdateView):
     fields = ['name', 'address', 'email', 'phone']
     template_name = 'organizations/organization_form.html'
     success_url = reverse_lazy('organizations:list')
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.user_type == 'OWNER':
+            # Owner → update organizations system-wide or those he owns
+            return Organization.objects.all()  # or filter(owner=user) if Organization has owner field
+
+        elif user.user_type in ['MANAGER', 'CHEF', 'CASHIER', 'WAITER']:
+            # Staff → organizations aliye-assigniwa
+            # Assuming Organization has a relation to staff via users or managers
+            return Organization.objects.filter(users=user)
+
+        # Default → no access
+        return Organization.objects.none()
 
 
 
@@ -256,10 +245,31 @@ class BranchUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "organizations/branch_form.html"
     success_url = reverse_lazy('organizations:branch_list')
 
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.user_type == "OWNER":
+            # Owner → branches of restaurants they own
+            return Branch.objects.filter(restaurant__owner=user)
+
+        elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
+            # Staff → branches of their assigned restaurant
+            return Branch.objects.filter(restaurant=user.restaurant)
+
+        return Branch.objects.none()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Rudisha restaurants zote kwenye system
-        context['restaurants'] = Restaurant.objects.all()
+        user = self.request.user
+
+        # Show restaurants the user can actually select
+        if user.user_type == "OWNER":
+            context['restaurants'] = Restaurant.objects.filter(owner=user)
+        elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
+            context['restaurants'] = Restaurant.objects.filter(id=user.restaurant.id)
+        else:
+            context['restaurants'] = Restaurant.objects.none()
+
         return context
 
 

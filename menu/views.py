@@ -84,23 +84,39 @@ class CategoryUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "menu/category_form.html"
     success_url = reverse_lazy("menu:category_list")
 
+    def get_queryset(self):
+        user = self.request.user
+
+        # OWNER: can update only categories of restaurants he owns
+        if user.user_type == "OWNER":
+            return Category.objects.filter(restaurant__owner=user)
+
+        # MANAGER: only categories of assigned restaurant
+        if user.user_type == "MANAGER":
+            return Category.objects.filter(restaurant=user.restaurant)
+
+        # others → block
+        return Category.objects.none()
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         user = self.request.user
 
-        # Return all restaurants in system
+        # OWNER: show only restaurants he owns
         if user.user_type == "OWNER":
-            # Owner → anaona zote aliomiliki
-            form.fields["restaurant"].queryset = Restaurant.objects.all()  # all restaurants
-        elif hasattr(user, "restaurant") and user.restaurant:
-            # Staff → one restaurant assigned
+            form.fields["restaurant"].queryset = Restaurant.objects.filter(owner=user)
+
+        # MANAGER: only his assigned restaurant
+        elif user.user_type == "MANAGER":
             form.fields["restaurant"].queryset = Restaurant.objects.filter(id=user.restaurant.id)
+
         else:
             form.fields["restaurant"].queryset = Restaurant.objects.none()
+
         return form
 
     def form_valid(self, form):
-        # Ensure created_by stays intact for update
+        # preserve created_by if existing
         if not form.instance.created_by:
             form.instance.created_by = self.request.user
         return super().form_valid(form)
@@ -200,34 +216,59 @@ class ItemCreateView(LoginRequiredMixin, CreateView):
 class ItemUpdateView(LoginRequiredMixin, UpdateView):
     model = Item
     fields = ["category", "name", "sku", "price", "tax_rate", "is_available", "image"]
-    template_name = "menu/item_form.html"  # use same template as create
+    template_name = "menu/item_form.html"
     success_url = reverse_lazy("menu:menu_list")
+
+    # SECURITY: prevent editing items outside user's restaurant
+    def get_queryset(self):
+        user = self.request.user
+
+        # OWNER → items za restaurant anazomiliki tu
+        if user.user_type == "OWNER":
+            return Item.objects.filter(category__restaurant__owner=user)
+
+        # MANAGER / STAFF → items za restaurant aliyo-assigniwa
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"]:
+            return Item.objects.filter(category__restaurant=user.restaurant)
+
+        # CUSTOMER → no permission
+        return Item.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Filter categories based on user's restaurant if exists
+        # CATEGORY FILTERING
         if user.user_type == "OWNER":
-            context['categories'] = Category.objects.all()
+            context["categories"] = Category.objects.filter(
+                restaurant__owner=user
+            )
 
-        elif hasattr(user, "restaurant") and user.restaurant:
-            context['categories'] = Category.objects.filter(restaurant=user.restaurant)
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"]:
+            context["categories"] = Category.objects.filter(
+                restaurant=user.restaurant
+            )
+
         else:
-            context['categories'] = Category.objects.all()
+            context["categories"] = Category.objects.none()
 
-        # Restaurants for display (optional)
-        context['restaurants'] = Restaurant.objects.all()
+        # Optional: restaurants display in template
+        if user.user_type == "OWNER":
+            context["restaurants"] = Restaurant.objects.filter(owner=user)
+        elif hasattr(user, "restaurant") and user.restaurant:
+            context["restaurants"] = Restaurant.objects.filter(id=user.restaurant.id)
+        else:
+            context["restaurants"] = Restaurant.objects.none()
 
-        # Pass current user for "Created By" readonly input
-        context['current_user'] = user
-
+        context["current_user"] = user
         return context
 
     def form_valid(self, form):
-        # Update the created_by to current user
-        form.instance.created_by = self.request.user
+        # preserve original creator; do not overwrite
+        if not form.instance.created_by:
+            form.instance.created_by = self.request.user
         return super().form_valid(form)
+
 
 
 

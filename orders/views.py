@@ -158,9 +158,27 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
 class OrderUpdateView(LoginRequiredMixin, View):
     template_name = "orders/order_update.html"
 
+    def get_queryset(self, user):
+        """
+        Return orders that the current user is allowed to edit
+        """
+        if user.user_type == "OWNER":
+            # OWNER → orders of restaurants he owns
+            return Order.objects.filter(restaurant__owner=user)
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"]:
+            # STAFF → orders of their assigned restaurant
+            return Order.objects.filter(restaurant=user.restaurant)
+        else:
+            # CUSTOMER or others → no permission
+            return Order.objects.none()
+
     def get(self, request, pk):
-        order = get_object_or_404(Order, id=pk)
-        tables = Table.objects.all()  # Retrieve all tables
+        order_qs = self.get_queryset(request.user)
+        order = get_object_or_404(order_qs, id=pk)
+
+        # Filter tables for the same restaurant as order
+        tables = Table.objects.filter(restaurant=order.restaurant)
+
         return render(request, self.template_name, {
             "object": order,
             "tables": tables,
@@ -169,14 +187,16 @@ class OrderUpdateView(LoginRequiredMixin, View):
         })
 
     def post(self, request, pk):
-        order = get_object_or_404(Order, id=pk)
+        order_qs = self.get_queryset(request.user)
+        order = get_object_or_404(order_qs, id=pk)
 
+        # Update order fields
         order.order_type = request.POST.get("order_type")
         order.status = request.POST.get("status")
         order.notes = request.POST.get("notes")
 
         table_id = request.POST.get("table")
-        order.table = Table.objects.filter(id=table_id).first() if table_id else None
+        order.table = Table.objects.filter(id=table_id, restaurant=order.restaurant).first() if table_id else None
 
         order.save()
         return redirect("orders:list")

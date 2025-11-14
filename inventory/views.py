@@ -92,16 +92,24 @@ class StockItemCreateView(LoginRequiredMixin, CreateView):
 
 class StockItemUpdateView(LoginRequiredMixin, UpdateView):
     model = StockItem
-    fields = ['name', 'unit', 'quantity', 'min_threshold', 'buying_price', 'selling_price']  # added
+    fields = ['name', 'unit', 'quantity', 'min_threshold', 'buying_price', 'selling_price']
     template_name = 'inventory/stockitem_form.html'
     success_url = reverse_lazy('inventory:list')
 
     def get_queryset(self):
-        # ensure user can only update items of their restaurant
         user = self.request.user
+
+        # OWNER – should only see stock from restaurants he owns
         if user.user_type == "OWNER":
-            return StockItem.objects.all()
-        return StockItem.objects.filter(restaurant=user.restaurant)
+            return StockItem.objects.filter(restaurant__owner=user)
+
+        # MANAGER – should only see stock of his assigned restaurant
+        if user.user_type == "MANAGER":
+            return StockItem.objects.filter(restaurant=user.restaurant)
+
+        # Others – block access (chef, waiter etc.)
+        return StockItem.objects.none()
+
 
 
 class StockItemDeleteView(LoginRequiredMixin, DeleteView):
@@ -483,26 +491,61 @@ class SaleCreateView(LoginRequiredMixin, TemplateView):
 class SaleUpdateView(LoginRequiredMixin, View):
     template_name = "inventory/sale_form.html"
 
+    def get_queryset(self):
+        user = self.request.user
+
+        # OWNER: can update only sales of restaurants he owns or the one assigned
+        if user.user_type == "OWNER":
+            return Sale.objects.filter(restaurant__owner=user)
+
+        # MANAGER: only his assigned restaurant
+        if user.user_type == "MANAGER":
+            return Sale.objects.filter(restaurant=user.restaurant)
+
+        # others blocked
+        return Sale.objects.none()
+
     def get(self, request, pk):
-        sale = get_object_or_404(Sale, pk=pk)
-        restaurants = Restaurant.objects.all() if request.user.user_type == "OWNER" else Restaurant.objects.filter(id=request.user.restaurant.id)
+        sale = get_object_or_404(self.get_queryset(), pk=pk)
+
+        user = request.user
+
+        # restaurants available to choose
+        if user.user_type == "OWNER":
+            restaurants = Restaurant.objects.filter(owner=user)
+        else:
+            restaurants = Restaurant.objects.filter(id=user.restaurant.id)
+
+        # stock items for these restaurants
         stock_items = StockItem.objects.filter(restaurant__in=restaurants)
 
         return render(request, self.template_name, {
             "sale": sale,
             "restaurants": restaurants,
-            "stock_items": stock_items
+            "stock_items": stock_items,
         })
 
     def post(self, request, pk):
-        sale = get_object_or_404(Sale, pk=pk)
+        sale = get_object_or_404(self.get_queryset(), pk=pk)
 
+        # validate restaurant
         try:
             restaurant_id = int(request.POST.get("restaurant"))
-            restaurant = get_object_or_404(Restaurant, id=restaurant_id)
         except (ValueError, TypeError):
-            return HttpResponseForbidden("Invalid restaurant selected.")
+            return HttpResponseForbidden("Invalid restaurant.")
+        
+        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
 
+        # Ensure user has permission to update sale in this restaurant
+        user = request.user
+        if user.user_type == "OWNER":
+            if restaurant.owner != user:
+                return HttpResponseForbidden("Not allowed.")
+        elif user.user_type == "MANAGER":
+            if restaurant != user.restaurant:
+                return HttpResponseForbidden("Not allowed.")
+
+        # update fields
         sale.customer_name = request.POST.get("customer_name") or ""
         sale.notes = request.POST.get("notes") or ""
 
@@ -511,9 +554,11 @@ class SaleUpdateView(LoginRequiredMixin, View):
         except InvalidOperation:
             sale.total_amount = Decimal("0")
 
+        sale.restaurant = restaurant
         sale.save()
-        # Optionally: handle SaleItem updates if needed
+
         return redirect("inventory:sales")
+
 
 
 # ---- Delete Sale ----

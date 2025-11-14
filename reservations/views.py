@@ -96,22 +96,52 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'reservations/reservation_update.html'
     success_url = reverse_lazy('reservations:list')
 
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.user_type == "OWNER":
+            # Owner → reservations of branches/restaurants they own
+            return Reservation.objects.filter(restaurant__owner=user)
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"]:
+            # Staff → reservations of their assigned restaurant
+            return Reservation.objects.filter(restaurant=user.restaurant)
+        elif user.user_type == "CUSTOMER":
+            # Customer → own reservations only
+            return Reservation.objects.filter(customer=user)
+        return Reservation.objects.none()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['branches'] = Branch.objects.all()
-        context['restaurants'] = Restaurant.objects.all()
+        user = self.request.user
+
+        # Restaurants dropdown
+        if user.user_type == "OWNER":
+            context['restaurants'] = Restaurant.objects.filter(owner=user)
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"]:
+            context['restaurants'] = Restaurant.objects.filter(id=user.restaurant.id)
+        else:
+            context['restaurants'] = Restaurant.objects.none()
+
+        # Branches dropdown filtered by restaurants user can access
+        context['branches'] = Branch.objects.filter(restaurant__in=context['restaurants'])
+
+        # Statuses & customers
         context['statuses'] = Reservation.STATUS_CHOICES
-        context['customers'] = User.objects.filter(user_type='CUSTOMER')
+        context['customers'] = User.objects.filter(user_type='CUSTOMER') if user.user_type in ['OWNER','MANAGER'] else None
+
         return context
 
     def form_valid(self, form):
-        if self.request.user.user_type in ['OWNER', 'MANAGER']:
+        user = self.request.user
+        if user.user_type in ['OWNER', 'MANAGER']:
             customer_id = self.request.POST.get('customer')
             if customer_id:
                 form.instance.customer_id = customer_id
         else:
-            form.instance.customer = self.request.user
+            # Ensure customer cannot edit others
+            form.instance.customer = user
         return super().form_valid(form)
+
 
 # ----------------- DELETE -----------------
 class ReservationDeleteView(LoginRequiredMixin, DeleteView):

@@ -100,54 +100,69 @@ class LogoutView(View):
 
 class OwnerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboards/owner_dashboard.html"
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
 
-        # Count total restaurants
-        context["total_restaurants"] = Restaurant.objects.count()
+        # OWNER should see only their restaurants
+        owner_restaurants = Restaurant.objects.filter(owner=user)
 
-        # Monthly revenue (sum of Sale.total_amount for current month)
+        context["total_restaurants"] = owner_restaurants.count()
+
+        # Monthly revenue for restaurants owned by this owner
         now = timezone.now()
         monthly_revenue = (
-            Sale.objects.filter(created_at__year=now.year, created_at__month=now.month)
+            Sale.objects.filter(
+                restaurant__owner=user,
+                created_at__year=now.year,
+                created_at__month=now.month,
+            )
             .aggregate(total=Sum("total_amount"))["total"] or 0
         )
         context["monthly_revenue"] = monthly_revenue
 
-        # All-time revenue (total sales across all restaurants)
-        all_time_revenue = Sale.objects.aggregate(total=Sum("total_amount"))["total"] or 0
+        # All-time revenue for all owned restaurants
+        all_time_revenue = (
+            Sale.objects.filter(restaurant__owner=user)
+            .aggregate(total=Sum("total_amount"))["total"] or 0
+        )
         context["all_time_revenue"] = all_time_revenue
 
-        # Optional: Revenue per restaurant (top 5)
+        # Revenue per owned restaurant (top 5)
         revenue_per_restaurant = (
-            Sale.objects.values("restaurant__name")
+            Sale.objects.filter(restaurant__owner=user)
+            .values("restaurant__name")
             .annotate(total=Sum("total_amount"))
             .order_by("-total")[:5]
         )
         context["revenue_per_restaurant"] = revenue_per_restaurant
 
         return context
-    
-
-
-    
-
 class ManagerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboards/manager_dashboard.html"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
 
-        # Get all open orders
-        open_orders = Order.objects.filter(status="OPEN")
+        # Ensure manager belongs to a restaurant
+        if not hasattr(user, "restaurant") or user.restaurant is None:
+            context["open_orders_count"] = 0
+            context["open_orders"] = Order.objects.none()
+            return context
 
-        # Count of open orders
+        # Show only orders for this manager's restaurant
+        open_orders = Order.objects.filter(
+            restaurant=user.restaurant,
+            status="OPEN"
+        )
+
         context["open_orders_count"] = open_orders.count()
-
-        # Full list of open orders (if we want to display them in table)
         context["open_orders"] = open_orders
 
         return context
+
 
 class CashierDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboards/cashier_dashboard.html"
