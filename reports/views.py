@@ -3,15 +3,16 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from datetime import timedelta
-from django.db.models import Sum, F, FloatField
+from django.db.models import Sum, FloatField
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from orders.models import OrderItem
-from inventory.models import PurchaseItem, StockItem
+from inventory.models import Sale, StockItem,SaleItem
 from organizations.models import Restaurant
+from payments.models import Expenditure
 from reports.models import Feedback
+from django.db.models import Q
 from subscriptions.mixins import PlanRequiredMixin
 # from subscriptions.decorators import plan_required_for_app
 # from django.utils.decorators import method_decorator
@@ -24,11 +25,17 @@ class ReportListView(PlanRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        restaurant = getattr(user, 'restaurant', None)
-        if not restaurant:
+
+        # Get restaurants visible to this user
+        if user.user_type == "OWNER":
+            restaurants = Restaurant.objects.filter(Q(owner=user) | Q(users=user)).distinct()
+        elif user.user_type == "MANAGER" and hasattr(user, "restaurant") and user.restaurant:
+            restaurants = Restaurant.objects.filter(id=user.restaurant.id)
+        else:
             return []
 
         filter_type = self.request.GET.get('filter', 'all')
+        restaurant_id = self.request.GET.get('restaurant')
         today = timezone.now().date()
 
         if filter_type == 'daily':
@@ -38,83 +45,91 @@ class ReportListView(PlanRequiredMixin, ListView):
         elif filter_type == 'monthly':
             start_date = today - timedelta(days=30)
         else:
-            start_date = None
+            start_date = None  # all time
 
-        # Orders & Revenue
-        order_items = OrderItem.objects.filter(order__restaurant=restaurant)
-        if start_date:
-            order_items = order_items.filter(order__created_at__date__gte=start_date)
+        # Filter selected restaurant
+        if restaurant_id:
+            restaurants = restaurants.filter(id=restaurant_id)
 
-        revenue = order_items.aggregate(
-            total_revenue=Sum(F('unit_price') * F('quantity'), output_field=FloatField())
-        )['total_revenue'] or 0
+        report_list = []
 
-        # Revenue per product
-        revenue_per_product = order_items.values('item__name').annotate(
-            total=Sum(F('unit_price') * F('quantity'), output_field=FloatField())
-        ).order_by('-total')
+        for restaurant in restaurants.distinct():
+            # Revenue
+            sales = Sale.objects.filter(restaurant=restaurant)
+            if start_date:
+                sales = sales.filter(created_at__date__gte=start_date)
+            revenue = sales.aggregate(total_revenue=Sum('total_amount', output_field=FloatField()))['total_revenue'] or 0
 
-        # Revenue per category
-        revenue_per_category = order_items.values('item__category__name').annotate(
-            total=Sum(F('unit_price') * F('quantity'), output_field=FloatField())
-        ).order_by('-total')
+            # Revenue per product
+            sale_items = SaleItem.objects.filter(sale__in=sales)
+            revenue_per_product = sale_items.values('item__name').annotate(
+                total=Sum('line_total', output_field=FloatField())
+            ).order_by('-total')
 
-        # Cost / Expenses
-        purchase_items = PurchaseItem.objects.filter(purchase__restaurant=restaurant)
-        if start_date:
-            purchase_items = purchase_items.filter(purchase__created_at__date__gte=start_date)
+            # Expenditure
+            expenditures = Expenditure.objects.filter(restaurant=restaurant)
+            if start_date:
+                expenditures = expenditures.filter(date__gte=start_date)
+            total_expenditure = expenditures.aggregate(total=Sum('amount', output_field=FloatField()))['total'] or 0
 
-        total_cost = purchase_items.aggregate(
-            total_cost=Sum(F('line_total'), output_field=FloatField())
-        )['total_cost'] or 0
+            # Profit
+            profit = revenue - total_expenditure
 
-        # Profit
-        profit = revenue - total_cost
+            # Inventory
+            inventory_items = StockItem.objects.filter(restaurant=restaurant)
+            low_stock_items = inventory_items.filter(quantity__lte=5)
+            in_stock_items = inventory_items.filter(quantity__gt=5)
 
-        # Top Selling Items
-        top_selling = order_items.values('item__name').annotate(
-            total_qty=Sum('quantity')
-        ).order_by('-total_qty')[:5]
-
-        # Inventory Status
-        inventory_items = StockItem.objects.filter(restaurant=restaurant)
-        low_stock_items = inventory_items.filter(quantity__lte=5)
-        in_stock_items = inventory_items.filter(quantity__gt=5)
-
-        # Build report list
-        report_list = [
-            {"title": "Revenue", "content": f"${revenue:.2f}"},
-            {"title": "Cost", "content": f"${total_cost:.2f}"},
-            {"title": "Profit", "content": f"${profit:.2f}"},
-            {"title": "Revenue Per Product", "content": list(revenue_per_product)},
-            {"title": "Revenue Per Category", "content": list(revenue_per_category)},
-            {"title": "Top Selling Items", "content": list(top_selling)},
-            {"title": "Low Stock Items", "content": list(low_stock_items.values('name','quantity'))},
-            {"title": "In Stock Items", "content": list(in_stock_items.values('name','quantity'))},
-        ]
+            # Append report
+            report_list.append({
+                "restaurant": restaurant.name,
+                "title": f"Financial Report - {restaurant.name}",
+                "content": [
+                    {"title": "Revenue", "value": f"TZS{revenue:.2f}"},
+                    {"title": "Expenditure", "value": f"TZS{total_expenditure:.2f}"},
+                    {"title": "Profit", "value": f"TZS{profit:.2f}"},
+                    {"title": "Revenue Per Product", "value": list(revenue_per_product)},
+                    {"title": "Low Stock Items", "value": list(low_stock_items.values('name','quantity'))},
+                    {"title": "In Stock Items", "value": list(in_stock_items.values('name','quantity'))},
+                ]
+            })
 
         return report_list
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['filter'] = self.request.GET.get('filter', 'all')
-        return context
+        user = self.request.user
 
+        # Restaurants for dropdown
+        if user.user_type == "OWNER":
+            context['restaurants'] = Restaurant.objects.filter(Q(owner=user) | Q(users=user)).distinct()
+        elif user.user_type == "MANAGER" and hasattr(user, "restaurant") and user.restaurant:
+            context['restaurants'] = Restaurant.objects.filter(id=user.restaurant.id)
+        else:
+            context['restaurants'] = Restaurant.objects.none()
+
+        context['filter'] = self.request.GET.get('filter', 'all')
+        context['selected_restaurant'] = self.request.GET.get('restaurant', None)
+        context['date_filters'] = [
+            ('all','All Time'),
+            ('daily','Today'),
+            ('weekly','Last 7 Days'),
+            ('monthly','Last 30 Days')
+        ]
+        return context
 
 class ReportDownloadPDF(View):
     def get(self, request, *args, **kwargs):
-        user = request.user
-        restaurant = getattr(user, 'restaurant', None)
-        if not restaurant:
-            return HttpResponse("No restaurant assigned.", status=400)
-
-        # Reuse ReportListView logic
+        # Reuse the ReportListView logic
         report_view = ReportListView()
         report_view.request = request
         reports = report_view.get_queryset()
 
         template_path = 'reports/report_pdf.html'
-        context = {'reports': reports, 'filter': request.GET.get('filter', 'all')}
+        context = {
+            'reports': reports,
+            'filter': request.GET.get('filter', 'all')
+        }
 
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="reports.pdf"'
@@ -126,6 +141,16 @@ class ReportDownloadPDF(View):
         if pisa_status.err:
             return HttpResponse('We had some errors <pre>' + html + '</pre>')
         return response
+
+
+
+
+
+
+
+
+
+
 
 
 

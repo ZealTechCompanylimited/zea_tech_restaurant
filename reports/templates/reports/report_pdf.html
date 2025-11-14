@@ -2,40 +2,189 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Reports PDF</title>
+    <title>Financial Reports PDF</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; }
-        h2 { color: #333; }
-        .card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-        .list-group { padding-left: 15px; }
-        .list-group-item { margin-bottom: 5px; }
+        /* General body styles */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 12px;
+            color: #2C3E50;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 26px;
+            margin-bottom: 30px;
+            color: #34495E;
+        }
+
+        /* Restaurant Card */
+        .restaurant-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .restaurant-header {
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #2980B9;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        /* Summary table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .summary-table th, .summary-table td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: center;
+        }
+
+        .summary-table th {
+            background-color: #3498DB;
+            color: #fff;
+        }
+
+        .summary-table td {
+            font-weight: bold;
+        }
+
+        /* Detailed tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        .data-table th {
+            background-color: #ecf0f1;
+            font-weight: bold;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Section titles */
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 12px 0 6px 0;
+            color: #2C3E50;
+        }
+
+        /* Value badge for single numbers */
+        .value-badge {
+            background-color: #27AE60;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 <h2>Financial Reports</h2>
+
 {% for report in reports %}
-    <div class="card">
-        <h4>{{ report.title }}</h4>
-        {% if report.content.0 %}
-            {% if report.content.0.total or report.content.0.total_qty or report.content.0.quantity or report.content.0.item__name or report.content.0.item__category__name or report.content.0.name %}
-            <ul class="list-group">
+<div class="restaurant-card">
+
+    <!-- Restaurant Header -->
+    <div class="restaurant-header">{{ report.title }} - {{ report.restaurant }}</div>
+
+    <!-- Summary Table -->
+    <table class="summary-table">
+        <thead>
+            <tr>
+                <th>Revenue (TZS)</th>
+                <th>Expenditure (TZS)</th>
+                <th>Profit (TZS)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
                 {% for item in report.content %}
-                    <li class="list-group-item">
-                        {% if item.item__name %}{{ item.item__name }}{% elif item.item__category__name %}{{ item.item__category__name }}{% elif item.name %}{{ item.name }}{% else %}{{ item }}{% endif %}
-                        :
-                        {% if item.total %}{{ item.total|floatformat:2 }}{% endif %}
-                        {% if item.total_qty %} Qty: {{ item.total_qty }}{% endif %}
-                        {% if item.quantity %} Qty: {{ item.quantity }}{% endif %}
-                    </li>
+                    {% if item.title == "Revenue" %}
+                        <td>{{ item.value }}</td>
+                    {% elif item.title == "Expenditure" %}
+                        <td>{{ item.value }}</td>
+                    {% elif item.title == "Profit" %}
+                        <td>{{ item.value }}</td>
+                    {% endif %}
                 {% endfor %}
-            </ul>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Detailed Sections -->
+    {% for item in report.content %}
+        {% if item.title not in "Revenue Expenditure Profit" %}
+            <div class="section-title">{{ item.title }}</div>
+
+            {% if item.value|length > 0 and item.value.0.item__name %}
+                <!-- Revenue Per Product Table -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Revenue (TZS)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in item.value %}
+                        <tr>
+                            <td>{{ p.item__name }}</td>
+                            <td>{{ p.total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif item.value|length > 0 and item.value.0.name %}
+                <!-- Stock Items Table -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Stock Item</th>
+                            <th>Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in item.value %}
+                        <tr>
+                            <td>{{ s.name }}</td>
+                            <td>{{ s.quantity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
-                <p>{{ report.content }}</p>
+                <span class="value-badge">{{ item.value }}</span>
             {% endif %}
-        {% else %}
-            <p>{{ report.content }}</p>
         {% endif %}
-    </div>
+    {% endfor %}
+
+</div>
 {% endfor %}
+
 </body>
 </html>
