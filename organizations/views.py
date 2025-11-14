@@ -3,6 +3,7 @@ from django.shortcuts import redirect
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib import messages
 from .models import Organization, Restaurant, Branch
 from django.conf import settings
 from django.db.models import Q
@@ -11,16 +12,33 @@ User = settings.AUTH_USER_MODEL
 # -------------------
 # RESTAURANT VIEWS
 # -------------------
-
-
 class RestaurantListView(LoginRequiredMixin, ListView):
     model = Restaurant
     template_name = 'organizations/restaurant_list.html'
     context_object_name = 'restaurants'
 
     def get_queryset(self):
-        # Return all restaurants in the system
-        return Restaurant.objects.all().order_by('name')
+        user = self.request.user
+
+        # OWNER → aone restaurants zote alizomiliki
+        if user.user_type == "OWNER":
+            return Restaurant.objects.filter(owner=user).order_by('name')
+
+        # MANAGER → aone restaurant yake tu
+        elif user.user_type == "MANAGER" and hasattr(user, 'restaurant'):
+            return Restaurant.objects.filter(id=user.restaurant.id)
+
+        # STAFF (CHEF, WAITER, CASHIER) → aone restaurant yake tu
+        elif user.user_type in ["CHEF", "WAITER", "CASHIER"] and hasattr(user, 'restaurant'):
+            return Restaurant.objects.filter(id=user.restaurant.id)
+
+        # CUSTOMER → optional: aone active restaurants tu
+        elif user.user_type == "CUSTOMER":
+            return Restaurant.objects.filter(is_active=True).order_by('name')
+
+        # Default: hakuna
+        return Restaurant.objects.none()
+
 
 class RestaurantCreateView(LoginRequiredMixin, CreateView):
     model = Restaurant
@@ -28,9 +46,20 @@ class RestaurantCreateView(LoginRequiredMixin, CreateView):
     template_name = 'organizations/restaurant_form.html'
     success_url = reverse_lazy('organizations:restaurant_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        # Only OWNER can create restaurants
+        if request.user.user_type != "OWNER":
+            messages.error(request, "Only owners can create restaurants.")
+            return redirect('organizations:restaurant_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
+        # Assign logged-in user as owner
         form.instance.owner = self.request.user
+        messages.success(self.request, f"Restaurant '{form.instance.name}' created successfully!")
         return super().form_valid(form)
+
+
 
 class RestaurantUpdateView(LoginRequiredMixin, UpdateView):
     model = Restaurant
@@ -164,19 +193,22 @@ class BranchListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
 
-        if user.user_type == "OWNER":
-            # Owner → aone branches zote za restaurants zake pamoja na branches zote system-wide
-            return Branch.objects.all().order_by('restaurant__name', 'name')
+        # 👇 OWNER anaona branches za restaurant aliyepo assigned tu
+        if hasattr(user, 'restaurant') and user.restaurant and user.user_type == "OWNER":
+            return Branch.objects.filter(restaurant=user.restaurant).order_by('name')
 
+        # Staff (MANAGER, CHEF, CASHIER, WAITER) → branches zao pekee
         elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-            # Staff → aone branches walizo assigniwa
-            return Branch.objects.filter(manager=user).order_by('restaurant__name', 'name')
+            if hasattr(user, 'restaurant') and user.restaurant:
+                return Branch.objects.filter(restaurant=user.restaurant).order_by('name')
+            return Branch.objects.none()
 
+        # CUSTOMER → branches active tu
         elif user.user_type == "CUSTOMER":
-            # Customers → optional: active branches tu
             return Branch.objects.filter(restaurant__is_active=True).order_by('restaurant__name', 'name')
 
         return Branch.objects.none()
+
 
 
 class BranchCreateView(LoginRequiredMixin, CreateView):
@@ -190,16 +222,33 @@ class BranchCreateView(LoginRequiredMixin, CreateView):
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
 
-    def form_valid(self, form):
-        form.instance.manager = self.request.user
-        return super().form_valid(form)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['restaurants'] = Restaurant.objects.all()  # all restaurants
-        context['manager_label'] = 'Owner' if self.request.user.user_type == 'OWNER' else 'Manager'
-        context['manager_value'] = self.request.user.username
+        user = self.request.user
+
+        # ✅ Restrict restaurants to user's assigned one
+        if hasattr(user, 'restaurant') and user.restaurant:
+            context['restaurants'] = Restaurant.objects.filter(id=user.restaurant.id)
+        else:
+            context['restaurants'] = Restaurant.objects.none()
+
+        context['manager_label'] = 'Owner' if user.user_type == 'OWNER' else 'Manager'
+        context['manager_value'] = user.username
         return context
+
+    def form_valid(self, form):
+        user = self.request.user
+
+        # Assign manager (creator) and ensure branch is for assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant:
+            form.instance.restaurant = user.restaurant
+            form.instance.manager = user
+        else:
+            form.add_error('restaurant', 'You do not have an assigned restaurant.')
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
+
 
 class BranchUpdateView(LoginRequiredMixin, UpdateView):
     model = Branch

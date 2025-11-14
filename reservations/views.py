@@ -20,21 +20,16 @@ class ReservationListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
 
-        # Owner sees all reservations
-        if user.user_type == "OWNER":
-            queryset = Reservation.objects.all()
-
-        # Managers, chefs, waiters, cashiers see reservations for their restaurant
-        elif user.user_type in ["MANAGER", "WAITER", "CHEF", "CASHIER"]:
-            # Assuming user has `restaurant` field
+        # 👇 Restrict reservations based on assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant and user.user_type in ["OWNER", "MANAGER", "CHEF", "WAITER", "CASHIER"]:
             queryset = Reservation.objects.filter(restaurant=user.restaurant)
 
-        # Customers see only their own reservations
+        # Customers → reservations zao pekee
         elif user.user_type == "CUSTOMER":
             queryset = Reservation.objects.filter(customer=user)
 
         else:
-            return Reservation.objects.none()
+            queryset = Reservation.objects.none()
 
         # Search by guest name or customer username
         search_name = self.request.GET.get("search_name")
@@ -58,18 +53,38 @@ class ReservationCreateView(LoginRequiredMixin, CreateView):
     template_name = "reservations/reservation_form.html"
     fields = ["restaurant", "branch", "date", "time", "party_size", "notes"]
 
-    def get_context_data(self, **kwargs):           
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['restaurants'] = Restaurant.objects.filter(is_active=True)
-        context['branches'] = Branch.objects.all()
+        user = self.request.user
+
+        # ✅ Restrict restaurants and branches to user's assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant:
+            context['restaurants'] = Restaurant.objects.filter(id=user.restaurant.id, is_active=True)
+            context['branches'] = Branch.objects.filter(restaurant=user.restaurant)
+        else:
+            context['restaurants'] = Restaurant.objects.none()
+            context['branches'] = Branch.objects.none()
+
         return context
 
     def form_valid(self, form):
-        form.instance.customer = self.request.user
+        user = self.request.user
+
+        # Assign current user as customer
+        form.instance.customer = user
+
+        # Ensure reservation is for user's assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant:
+            form.instance.restaurant = user.restaurant
+        else:
+            form.add_error('restaurant', "You do not have an assigned restaurant.")
+            return self.form_invalid(form)
+
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse("reservations:list")
+
 
 # ----------------- UPDATE -----------------
 class ReservationUpdateView(LoginRequiredMixin, UpdateView):

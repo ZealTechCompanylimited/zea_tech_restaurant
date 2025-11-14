@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .models import Item, Category
@@ -20,16 +21,41 @@ class CategoryCreateView(LoginRequiredMixin, CreateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # Show all restaurants in the dropdown
-        form.fields["restaurant"].queryset = Restaurant.objects.all()
+        user = self.request.user
+
+        # OWNER → restaurants alizomiliki
+        if user.user_type == "OWNER":
+            form.fields["restaurant"].queryset = Restaurant.objects.filter(owner=user)
+
+        # STAFF (MANAGER, CHEF, WAITER, CASHIER) → restaurant yake tu
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"] and hasattr(user, "restaurant"):
+            form.fields["restaurant"].queryset = Restaurant.objects.filter(id=user.restaurant.id)
+            form.initial["restaurant"] = user.restaurant.id
+
+        # CUSTOMER au wengine → hakuna restaurants
+        else:
+            form.fields["restaurant"].queryset = Restaurant.objects.none()
+
         return form
 
     def form_valid(self, form):
-        # Automatically assign logged-in user as created_by
-        form.instance.created_by = self.request.user
+        user = self.request.user
+
+        # Assign created_by automatically
+        form.instance.created_by = user
+
+        # Validate if user can create for that restaurant
+        restaurant = form.cleaned_data.get("restaurant")
+        if not restaurant:
+            form.add_error("restaurant", "Please select a valid restaurant.")
+            return self.form_invalid(form)
+
+        if user.user_type != "OWNER" and getattr(user, "restaurant", None) != restaurant:
+            form.add_error("restaurant", "You cannot create a category for another restaurant.")
+            return self.form_invalid(form)
+
+        messages.success(self.request, f"Category '{form.instance.name}' created successfully!")
         return super().form_valid(form)
-
-
 class CategoryListView(LoginRequiredMixin, ListView):
     model = Category
     template_name = "menu/category_list.html"
@@ -38,17 +64,17 @@ class CategoryListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
 
-        # If user is owner, return all tables
+        # OWNER → aone categories za restaurants alizomiliki
         if user.user_type == "OWNER":
-            return Category.objects.all()
+            return Category.objects.filter(restaurant__owner=user).order_by("restaurant__name", "name")
 
-        # If user is manager, chef, or waiter, filter accordingly
-        elif user.user_type in ["MANAGER", "CHEF", "WAITER"]:
-            # Example: filter by restaurant they belong to
-            return Category.objects.filter(restaurant=user.restaurant)
+        # STAFF (MANAGER, CHEF, WAITER, CASHIER) → restaurant yake tu
+        elif user.user_type in ["MANAGER", "CHEF", "WAITER", "CASHIER"] and hasattr(user, "restaurant"):
+            return Category.objects.filter(restaurant=user.restaurant).order_by("name")
 
-        # Default: return empty queryset
+        # CUSTOMER → hakuna access
         return Category.objects.none()
+
 
 
     
@@ -90,124 +116,22 @@ class CategoryDeleteView(LoginRequiredMixin, DeleteView):
 
 
 
-# class MenuListView(LoginRequiredMixin, ListView):
-#     model = Item
-#     template_name = "menu/menu_list.html"
-#     context_object_name = "menu_items"
-
-#     def get_queryset(self):
-#         user = self.request.user
-
-#         if user.user_type == "OWNER":
-#             # Owner → menu zake na zile za restaurant zake
-#             return Item.objects.filter(
-#                 Q(created_by=user) | Q(restaurant__owner=user)
-#             ).order_by('restaurant__name', 'category__name', 'name')
-
-#         elif user.user_type == "MANAGER":
-#             # Manager → menus za restaurants aliye assigniwa
-#             return Item.objects.filter(
-#                 restaurant__in=user.restaurants.all()
-#             ).order_by('restaurant__name', 'category__name', 'name')
-
-#         elif user.user_type in ["CHEF", "CASHIER", "WAITER"]:
-#             return Item.objects.filter(
-#                 restaurant__in=user.restaurants.all()
-#             ).order_by('restaurant__name', 'category__name', 'name')
-
-#         elif user.user_type == "CUSTOMER":
-#             return Item.objects.filter(
-#                 restaurant__is_active=True
-#             ).order_by('restaurant__name', 'category__name', 'name')
-
-#         return Item.objects.none()
-
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         user = self.request.user
-
-#         if user.user_type == "OWNER":
-#             context['restaurants'] = user.restaurants.all()
-#         elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-#             context['restaurants'] = user.restaurants.all()
-#         else:
-#             context['restaurants'] = []
-
-#         return context
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class MenuListView(LoginRequiredMixin, ListView):
     model = Item
     template_name = "menu/menu_list.html"
     context_object_name = "menu_items"
-    
-    
-    
+
     def get_queryset(self):
         user = self.request.user
 
-        # If user is owner, return all tables
-        if user.user_type == "OWNER":
-            return Item.objects.all()
-
-        # If user is manager, chef, or waiter, filter accordingly
-        elif user.user_type in ["MANAGER", "CHEF", "WAITER","CASHIER"]:
-            # Example: filter by restaurant they belong to
+        # 👇 Hata OWNER anaona menu za restaurant yake tu
+        if hasattr(user, 'restaurant') and user.restaurant:
             return Item.objects.filter(restaurant=user.restaurant)
-
-        # Default: return empty queryset
+        
+        # Default: empty queryset
         return Item.objects.none()
 
-    # def get_queryset(self):
-    #     user = self.request.user
 
-    #     if user.user_type == "OWNER":
-    #         # Owner sees all menu items
-    #         queryset = Item.objects.all().order_by('restaurant__name', 'category__name', 'name')
-
-    #     elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-    #         # Staff sees menu items for their assigned restaurants
-    #         queryset = Item.objects.filter(restaurant__in=user.restaurants.all())\
-    #                                .order_by('restaurant__name', 'category__name', 'name')
-
-    #     elif user.user_type == "CUSTOMER":
-    #         # Customers see items only from active restaurants
-    #         queryset = Item.objects.filter(restaurant__is_active=True)\
-    #                                .order_by('restaurant__name', 'category__name', 'name')
-
-    #     else:
-    #         queryset = Item.objects.none()
-
-    #     return queryset
-
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     user = self.request.user
-
-    #     if user.user_type == "OWNER":
-    #         context['restaurants'] = Restaurant.objects.all()
-    #     elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-    #         context['restaurants'] = user.restaurants.all()
-    #     else:
-    #         context['restaurants'] = []
-
-    #     return context
 
 
 

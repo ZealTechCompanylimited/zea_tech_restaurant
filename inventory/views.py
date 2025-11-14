@@ -7,6 +7,11 @@ from .models import StockItem, StockMovement, Purchase, PurchaseItem, Supplier, 
 from django.http import HttpResponseForbidden
 from decimal import Decimal, InvalidOperation
 
+from django.views.generic import ListView
+from django.db.models import Q
+
+
+from django.db import transaction
 
 from django.http import JsonResponse
 
@@ -27,12 +32,11 @@ class StockItemListView(LoginRequiredMixin, ListView):
         user = self.request.user
         queryset = StockItem.objects.all()
 
-        # OWNER sees all
-        if user.user_type != "OWNER":
-            if hasattr(user, 'restaurant') and user.restaurant:
-                queryset = queryset.filter(restaurant=user.restaurant)
-            else:
-                queryset = StockItem.objects.none()
+        # Kila user, ikiwemo OWNER, aone restaurant yake tu
+        if hasattr(user, 'restaurant') and user.restaurant:
+            queryset = queryset.filter(restaurant=user.restaurant)
+        else:
+            queryset = StockItem.objects.none()
 
         # ✅ handle search
         search = self.request.GET.get('search', '')
@@ -47,29 +51,6 @@ class StockItemListView(LoginRequiredMixin, ListView):
         return context
 
 
-
-
-# class StockItemCreateView(LoginRequiredMixin, CreateView):
-#     model = StockItem
-#     fields = ['restaurant', 'name', 'unit', 'quantity', 'min_threshold']
-#     template_name = 'inventory/stockitem_form.html'
-#     success_url = reverse_lazy('inventory:list')
-
-#     def get_form(self, form_class=None):
-#         form = super().get_form(form_class)
-#         user = self.request.user
-#         # Filter restaurants kulingana na user
-#         if user.user_type == "OWNER":
-#             form.fields['restaurant'].queryset = Restaurant.objects.all()
-#         else:
-#             form.fields['restaurant'].queryset = Restaurant.objects.filter(users=user)
-#         return form
-
-#     def form_valid(self, form):
-#         # Assign restaurant automatically kama staff hana kuchagua
-#         if not form.instance.restaurant:
-#             form.instance.restaurant = self.request.user.restaurant
-#         return super().form_valid(form)
 
 
 class StockItemCreateView(LoginRequiredMixin, CreateView):
@@ -90,14 +71,20 @@ class StockItemCreateView(LoginRequiredMixin, CreateView):
         form = super().get_form(form_class)
         user = self.request.user
 
-        if user.user_type == "OWNER":
-            form.fields['restaurant'].queryset = Restaurant.objects.all()
+        # 👇 Owner na wafanyakazi wote waone restaurant yao tu
+        if hasattr(user, 'restaurant') and user.restaurant:
+            form.fields['restaurant'].queryset = Restaurant.objects.filter(id=user.restaurant.id)
+            form.fields['restaurant'].initial = user.restaurant
         else:
-            form.fields['restaurant'].queryset = Restaurant.objects.filter(users=user)
+            # Kama hana restaurant assigned, field iwe empty
+            form.fields['restaurant'].queryset = Restaurant.objects.none()
+
         return form
 
     def form_valid(self, form):
-        if not form.instance.restaurant:
+        # 👇 Kama restaurant haikuchaguliwa (mfano hidden field)
+        # tunahakikisha inawekwa restaurant ya user
+        if not form.instance.restaurant and hasattr(self.request.user, 'restaurant'):
             form.instance.restaurant = self.request.user.restaurant
         return super().form_valid(form)
 
@@ -176,18 +163,15 @@ class StockMovementCreateView(LoginRequiredMixin, CreateView):
         form = super().get_form(*args, **kwargs)
         user = self.request.user
 
-        # ===== Determine restaurants based on user type =====
-        if hasattr(user, 'user_type') and user.user_type == 'OWNER':
-            # Owner sees all restaurants
-            form.fields['restaurant'].queryset = Restaurant.objects.all()
-        elif hasattr(user, 'restaurant') and user.restaurant:
-            # Regular user sees only their restaurant
+        # ===== Restrict restaurants =====
+        if hasattr(user, 'restaurant') and user.restaurant:
+            # User anaona restaurant yake tu
             form.fields['restaurant'].queryset = Restaurant.objects.filter(id=user.restaurant.id)
             form.initial['restaurant'] = user.restaurant.id
         else:
             form.fields['restaurant'].queryset = Restaurant.objects.none()
 
-        # ===== Filter items based on selected restaurant =====
+        # ===== Restrict items to those existing in inventory for that restaurant =====
         if self.request.method == 'POST':
             restaurant_id = self.request.POST.get('restaurant')
         else:
@@ -200,28 +184,31 @@ class StockMovementCreateView(LoginRequiredMixin, CreateView):
 
         return form
 
+    def form_valid(self, form):
+        # Extra security: ensure selected item belongs to the user's restaurant
+        user = self.request.user
+        item = form.cleaned_data['item']
+        if hasattr(user, 'restaurant') and user.restaurant:
+            if item.restaurant != user.restaurant:
+                form.add_error('item', 'This item does not belong to your restaurant.')
+                return self.form_invalid(form)
+        return super().form_valid(form)
 
-# ===== API endpoint for AJAX dynamic items =====
+
+# ===== AJAX endpoint =====
 def get_items_by_restaurant(request, restaurant_id):
     items = StockItem.objects.filter(restaurant_id=restaurant_id)
     data = [
-        {"id": item.id, "name": item.name, "quantity": float(item.quantity), "unit": item.unit}
+        {
+            "id": item.id,
+            "name": item.name,
+            "quantity": float(item.quantity),
+            "unit": item.unit
+        }
         for item in items
     ]
     return JsonResponse(data, safe=False)
 
-
-# class StockMovementCreateView(LoginRequiredMixin, CreateView):
-#     model = StockMovement
-#     fields = ['item', 'movement_type', 'quantity', 'note']
-#     template_name = 'inventory/stockmovement_form.html'
-#     success_url = reverse_lazy('inventory:movements')
-
-#     def get_form(self, *args, **kwargs):
-#         form = super().get_form(*args, **kwargs)
-#         if hasattr(self.request.user, "restaurant") and self.request.user.restaurant:
-#             form.fields['item'].queryset = StockItem.objects.filter(restaurant=self.request.user.restaurant)
-#         return form
 
 # ======================
 # SUPPLIERS
@@ -382,11 +369,6 @@ class PurchaseCreateView(LoginRequiredMixin, View):
 
 
 
-from django.views.generic import ListView
-from django.db.models import Q
-
-from django.views.generic import ListView
-from django.db.models import Q
 
 class SaleListView(LoginRequiredMixin, ListView):
     model = Sale
@@ -396,27 +378,22 @@ class SaleListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
 
-        # Base queryset depending on user type
-        if user.user_type == "OWNER":
-            queryset = Sale.objects.all()
-        elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-            if hasattr(user, 'restaurant') and user.restaurant:
-                queryset = Sale.objects.filter(restaurant=user.restaurant)
-            else:
-                queryset = Sale.objects.none()
+        # 👇 Kila user (hata OWNER) aone mauzo ya restaurant yake tu
+        if hasattr(user, 'restaurant') and user.restaurant:
+            queryset = Sale.objects.filter(restaurant=user.restaurant)
         else:
             queryset = Sale.objects.none()
 
         queryset = queryset.order_by('-created_at')
 
-        # ✅ Search filter (now includes notes)
+        # ✅ Search filter (including notes)
         search = self.request.GET.get('search', '')
         if search:
             queryset = queryset.filter(
                 Q(id__icontains=search) |
                 Q(customer_name__icontains=search) |
                 Q(items__item__name__icontains=search) |
-                Q(notes__icontains=search)                # ✅ Add notes here
+                Q(notes__icontains=search)
             ).distinct()
 
         # ✅ Attach profit dynamically
@@ -436,97 +413,20 @@ class SaleListView(LoginRequiredMixin, ListView):
 
 
 
-# class SaleCreateView(LoginRequiredMixin, View):
-#     template_name = "inventory/sale_form.html"
-
-#     def get_user_restaurants(self, user):
-#         if user.user_type == "OWNER":
-#             return Restaurant.objects.all()
-#         elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-#             return Restaurant.objects.filter(id=user.restaurant.id) if user.restaurant else Restaurant.objects.none()
-#         return Restaurant.objects.none()
-
-#     def get(self, request):
-#         restaurants = self.get_user_restaurants(request.user)
-#         stock_items = StockItem.objects.filter(restaurant__in=restaurants)
-#         return render(request, self.template_name, {"restaurants": restaurants, "stock_items": stock_items})
-
-#     def post(self, request):
-#         user_restaurants = self.get_user_restaurants(request.user)
-
-#         # Validate restaurant
-#         try:
-#             restaurant_id = int(request.POST.get("restaurant"))
-#             restaurant = get_object_or_404(user_restaurants, id=restaurant_id)
-#         except (ValueError, TypeError):
-#             return HttpResponseForbidden("Invalid restaurant selected.")
-
-#         customer_name = request.POST.get("customer_name") or ""
-#         notes = request.POST.get("notes") or ""
-
-#         # Convert total_amount safely
-#         try:
-#             total_amount = Decimal(request.POST.get("total_amount") or "0")
-#         except InvalidOperation:
-#             total_amount = Decimal("0")
-
-#         sale = Sale.objects.create(
-#             restaurant=restaurant,
-#             customer_name=customer_name,
-#             notes=notes,
-#             total_amount=total_amount
-#         )
-
-#         items = request.POST.getlist("item[]")
-#         quantities = request.POST.getlist("quantity[]")
-#         unit_prices = request.POST.getlist("unit_price[]")
-
-#         for i, item_id in enumerate(items):
-#             stock_item = get_object_or_404(StockItem, id=item_id, restaurant=restaurant)
-
-#             # Convert quantities and prices safely
-#             try:
-#                 qty = Decimal(quantities[i])
-#                 price = Decimal(unit_prices[i])
-#             except (InvalidOperation, IndexError):
-#                 continue  # skip invalid entries
-
-#             if stock_item.quantity < qty:
-#                 sale.delete()  # rollback sale
-#                 return HttpResponseForbidden(f"Not enough stock for {stock_item.name}")
-
-#             # Update stock safely
-#             stock_item.quantity -= qty
-#             stock_item.save()
-
-#             SaleItem.objects.create(
-#                 sale=sale,
-#                 item=stock_item,
-#                 quantity=qty,
-#                 unit_price=price
-#             )
-
-#         return redirect("inventory:sales")
-    
-from decimal import Decimal, InvalidOperation
-
-from django.db import transaction
-
-
 
 class SaleCreateView(LoginRequiredMixin, TemplateView):
     template_name = "inventory/sale_form.html"
 
     def get_user_restaurants(self, user):
-        if user.user_type == "OWNER":
-            return Restaurant.objects.all()
-        elif user.user_type in ["MANAGER", "CHEF", "CASHIER", "WAITER"]:
-            return Restaurant.objects.filter(id=user.restaurant.id) if user.restaurant else Restaurant.objects.none()
+        # 👇 Kila user (hata OWNER) aone restaurant yake tu
+        if hasattr(user, 'restaurant') and user.restaurant:
+            return Restaurant.objects.filter(id=user.restaurant.id)
         return Restaurant.objects.none()
 
     def get(self, request, *args, **kwargs):
         restaurants = self.get_user_restaurants(request.user)
         stock_items = StockItem.objects.filter(restaurant__in=restaurants)
+
         return render(request, self.template_name, {
             "restaurants": restaurants,
             "stock_items": stock_items
@@ -578,7 +478,7 @@ class SaleCreateView(LoginRequiredMixin, TemplateView):
                 )
 
         return redirect("inventory:sales")
- 
+
 
 class SaleUpdateView(LoginRequiredMixin, View):
     template_name = "inventory/sale_form.html"

@@ -8,7 +8,7 @@ from .models import Order, OrderItem, Table, Invoice
 from menu.models import Item
 from organizations.models import Restaurant
 from django.db.models import Sum, F, FloatField,Q
-# from django.http import JsonResponse
+from django.http import HttpResponseForbidden
 from django.core.exceptions import PermissionDenied
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -27,17 +27,20 @@ class OrderListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
 
-        # Base queryset according to user type
-        if user.user_type in ["OWNER" ]:
-            queryset = Order.objects.all()
-        elif user.user_type in ["CHEF", "WAITER","MANAGER","CASHIER"]:
-            queryset = Order.objects.filter(restaurant=user.restaurant)
-        elif user.user_type == "CUSTOMER":
-            queryset = Order.objects.filter(created_by=user)
+        # 👇 Restrict orders based on assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant:
+            # Hata OWNER anaona orders za restaurant aliyepo assigned
+            if user.user_type in ["OWNER", "CHEF", "WAITER", "MANAGER", "CASHIER"]:
+                queryset = Order.objects.filter(restaurant=user.restaurant)
+            elif user.user_type == "CUSTOMER":
+                queryset = Order.objects.filter(created_by=user)
+            else:
+                queryset = Order.objects.none()
         else:
-            return Order.objects.none()
+            # User hana restaurant assigned → hakuna orders
+            queryset = Order.objects.none()
 
-        # Search filter: customer name
+        # Search filter: customer name or username
         search_name = self.request.GET.get("search_name")
         if search_name:
             queryset = queryset.filter(
@@ -48,17 +51,14 @@ class OrderListView(LoginRequiredMixin, ListView):
         # Date filter
         start_date = self.request.GET.get("start_date")
         end_date = self.request.GET.get("end_date")
-
         if start_date and end_date:
             queryset = queryset.filter(
                 created_at__date__gte=start_date,
                 created_at__date__lte=end_date
             )
-        else:
-            # Optional: default show today's orders
-            pass  # don't filter by default if you want all orders
 
         return queryset.order_by("-created_at")
+
 
 
 # --- ORDER CREATE ---
@@ -71,24 +71,44 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['restaurants'] = Restaurant.objects.filter(is_active=True)
-        context['items'] = Item.objects.filter(restaurant__in=context['restaurants'])
-        context['tables'] = Table.objects.filter(is_active=True)
-        context['current_user'] = self.request.user
+        user = self.request.user
+
+        # ✅ Restrict restaurants to the user's assigned one
+        if hasattr(user, 'restaurant') and user.restaurant:
+            restaurants = Restaurant.objects.filter(id=user.restaurant.id, is_active=True)
+        else:
+            restaurants = Restaurant.objects.none()
+
+        context['restaurants'] = restaurants
+
+        # ✅ Only items of the user's restaurants
+        context['items'] = Item.objects.filter(restaurant__in=restaurants)
+
+        # ✅ Only tables of the user's restaurant
+        context['tables'] = Table.objects.filter(restaurant__in=restaurants, is_active=True)
+
+        context['current_user'] = user
         return context
 
     def post(self, request, *args, **kwargs):
+        user = request.user
+
         restaurant_id = request.POST.get("restaurant")
         restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+
+        # Security check: ensure user can only order for their assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant != restaurant:
+            return HttpResponseForbidden("You cannot create orders for this restaurant.")
+
         order_type = request.POST.get("order_type")
         table_id = request.POST.get("table")
-        table = Table.objects.filter(id=table_id).first() if table_id else None
+        table = Table.objects.filter(id=table_id, restaurant=restaurant).first() if table_id else None
         notes = request.POST.get("notes", "")
         guest_name = request.POST.get("guest_name", "")
         guest_phone = request.POST.get("guest_phone", "")
 
-        # Assign logged-in user as created_by (even for customer)
-        created_by = request.user
+        # Assign logged-in user as created_by
+        created_by = user
 
         order = Order.objects.create(
             restaurant=restaurant,
@@ -96,8 +116,8 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
             order_type=order_type,
             table=table,
             notes=notes,
-            guest_name=guest_name if order_type in ["DELIVERY","TAKEAWAY"] else "",
-            guest_phone=guest_phone if order_type in ["DELIVERY","TAKEAWAY"] else "",
+            guest_name=guest_name if order_type in ["DELIVERY", "TAKEAWAY"] else "",
+            guest_phone=guest_phone if order_type in ["DELIVERY", "TAKEAWAY"] else "",
         )
 
         # Add order items
@@ -106,7 +126,7 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
         for i, item_id in enumerate(item_ids):
             if not item_id:
                 continue
-            item = get_object_or_404(Item, id=item_id)
+            item = get_object_or_404(Item, id=item_id, restaurant=restaurant)
             qty = int(quantities[i])
             line_total = (item.price + item.tax_rate) * qty
             OrderItem.objects.create(
@@ -128,9 +148,8 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
         order.grand_total = order.subtotal + order.tax_total
         order.save()
 
-
-
         return redirect("orders:list")
+
 
 
 
@@ -189,16 +208,15 @@ class TableListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
 
-        # If user is owner, return all tables
-        if user.user_type == "OWNER":
-            return Table.objects.all()
-
-        # If user is manager, chef, or waiter, filter accordingly
+        # 👇 Hata OWNER anaona tables za restaurant aliyepo assigned
+        if hasattr(user, 'restaurant') and user.restaurant:
+            return Table.objects.filter(restaurant=user.restaurant)
+        
+        # Staff (MANAGER, CHEF, WAITER) wanaona tables za restaurant yao
         elif user.user_type in ["MANAGER", "CHEF", "WAITER"]:
-            # Example: filter by restaurant they belong to
             return Table.objects.filter(restaurant=user.restaurant)
 
-        # Default: return empty queryset
+        # Default: empty queryset
         return Table.objects.none()
 
 
@@ -215,19 +233,32 @@ class TableCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["restaurants"] = Restaurant.objects.all().order_by("name")
+        user = self.request.user
+
+        # ✅ Restrict restaurants to user's assigned one
+        if hasattr(user, 'restaurant') and user.restaurant:
+            context["restaurants"] = Restaurant.objects.filter(id=user.restaurant.id)
+            context["single_restaurant"] = True  # flag for template to hide dropdown
+        else:
+            context["restaurants"] = Restaurant.objects.none()
+            context["single_restaurant"] = False
+
         return context
 
     def form_valid(self, form):
-        restaurant_id = self.request.POST.get("restaurant")
-        if not restaurant_id:
-            form.add_error("restaurant", "Please select a restaurant.")
+        user = self.request.user
+
+        # Assign table to user's restaurant
+        if hasattr(user, 'restaurant') and user.restaurant:
+            form.instance.restaurant = user.restaurant
+        else:
+            form.add_error("restaurant", "You do not have an assigned restaurant.")
             return self.form_invalid(form)
 
-        form.instance.restaurant = Restaurant.objects.get(id=restaurant_id)
         response = super().form_valid(form)
         messages.success(self.request, f"Table '{form.instance.name}' created successfully!")
         return response
+
 
 
 # Update Table
@@ -239,13 +270,29 @@ class TableUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["restaurants"] = Restaurant.objects.all().order_by("name")
+        user = self.request.user
+
+        # ✅ Restrict restaurants to user's assigned one
+        if hasattr(user, 'restaurant') and user.restaurant:
+            context["restaurants"] = Restaurant.objects.filter(id=user.restaurant.id)
+            context["single_restaurant"] = True  # flag for template to hide dropdown
+        else:
+            context["restaurants"] = Restaurant.objects.none()
+            context["single_restaurant"] = False
+
         return context
 
     def form_valid(self, form):
-        restaurant_id = self.request.POST.get("restaurant")
-        if restaurant_id:
-            form.instance.restaurant = Restaurant.objects.get(id=restaurant_id)
+        user = self.request.user
+
+        # ✅ Security: ensure user can only update tables of their assigned restaurant
+        if hasattr(user, 'restaurant') and user.restaurant:
+            if form.instance.restaurant != user.restaurant:
+                return HttpResponseForbidden("You cannot update a table for another restaurant.")
+            form.instance.restaurant = user.restaurant
+        else:
+            return HttpResponseForbidden("You do not have an assigned restaurant.")
+
         response = super().form_valid(form)
         messages.success(self.request, f"Table '{form.instance.name}' updated successfully!")
         return response
